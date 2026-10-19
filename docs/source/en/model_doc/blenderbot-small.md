@@ -13,8 +13,14 @@ specific language governing permissions and limitations under the License.
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2020-04-28 and contributed to Hugging Face Transformers on 2021-01-05.*
 
 # Blenderbot Small
+
+<div class="flex flex-wrap space-x-1">
+<img alt="FlashAttention" src="https://img.shields.io/badge/%E2%9A%A1%EF%B8%8E%20FlashAttention-eae0c8?style=flat">
+<img alt="SDPA" src="https://img.shields.io/badge/SDPA-DE3412?style=flat&logo=pytorch&logoColor=white">
+</div>
 
 Note that [`BlenderbotSmallModel`] and
 [`BlenderbotSmallForConditionalGeneration`] are only used in combination with the checkpoint
@@ -24,7 +30,7 @@ instead be used with [`BlenderbotModel`] and
 
 ## Overview
 
-The Blender chatbot model was proposed in [Recipes for building an open-domain chatbot](https://arxiv.org/pdf/2004.13637.pdf) Stephen Roller, Emily Dinan, Naman Goyal, Da Ju, Mary Williamson, Yinhan Liu,
+The Blender chatbot model was proposed in [Recipes for building an open-domain chatbot](https://huggingface.co/papers/2004.13637) Stephen Roller, Emily Dinan, Naman Goyal, Da Ju, Mary Williamson, Yinhan Liu,
 Jing Xu, Myle Ott, Kurt Shuster, Eric M. Smith, Y-Lan Boureau, Jason Weston on 30 Apr 2020.
 
 The abstract of the paper is the following:
@@ -40,15 +46,15 @@ and code publicly available. Human evaluations show our best models are superior
 dialogue in terms of engagingness and humanness measurements. We then discuss the limitations of this work by analyzing
 failure cases of our models.*
 
-Tips:
-
-- Blenderbot Small is a model with absolute position embeddings so it's usually advised to pad the inputs on the right rather than
-  the left.
-
 This model was contributed by [patrickvonplaten](https://huggingface.co/patrickvonplaten). The authors' code can be
 found [here](https://github.com/facebookresearch/ParlAI).
 
-## Documentation resources
+## Usage tips
+
+Blenderbot Small is a model with absolute position embeddings so it's usually advised to pad the inputs on the right rather than
+the left.
+
+## Resources
 
 - [Causal language modeling task guide](../tasks/language_modeling)
 - [Translation task guide](../tasks/translation)
@@ -61,14 +67,8 @@ found [here](https://github.com/facebookresearch/ParlAI).
 ## BlenderbotSmallTokenizer
 
 [[autodoc]] BlenderbotSmallTokenizer
-    - build_inputs_with_special_tokens
     - get_special_tokens_mask
-    - create_token_type_ids_from_sequences
     - save_vocabulary
-
-## BlenderbotSmallTokenizerFast
-
-[[autodoc]] BlenderbotSmallTokenizerFast
 
 ## BlenderbotSmallModel
 
@@ -84,27 +84,3 @@ found [here](https://github.com/facebookresearch/ParlAI).
 
 [[autodoc]] BlenderbotSmallForCausalLM
     - forward
-
-## TFBlenderbotSmallModel
-
-[[autodoc]] TFBlenderbotSmallModel
-    - call
-
-## TFBlenderbotSmallForConditionalGeneration
-
-[[autodoc]] TFBlenderbotSmallForConditionalGeneration
-    - call
-
-## FlaxBlenderbotSmallModel
-
-[[autodoc]] FlaxBlenderbotSmallModel
-    - __call__
-    - encode
-    - decode
-
-## FlaxBlenderbotForConditionalGeneration
-
-[[autodoc]] FlaxBlenderbotSmallForConditionalGeneration
-    - __call__
-    - encode
-    - decode

@@ -9,16 +9,18 @@ Unless required by applicable law or agreed to in writing, software distributed 
 an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 
-⚠️ Note that this file is in Markdown but contain specific syntax for our doc-builder (similar to MDX) that may not be
+⚠️ Note that this file is in Markdown but contains specific syntax for our doc-builder (similar to MDX) that may not be
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2021-10-26 and contributed to Hugging Face Transformers on 2021-12-16.*
 
 # WavLM
 
+
 ## Overview
 
-The WavLM model was proposed in [WavLM: Large-Scale Self-Supervised Pre-Training for Full Stack Speech Processing](https://arxiv.org/abs/2110.13900) by Sanyuan Chen, Chengyi Wang, Zhengyang Chen, Yu Wu, Shujie Liu, Zhuo Chen,
+The WavLM model was proposed in [WavLM: Large-Scale Self-Supervised Pre-Training for Full Stack Speech Processing](https://huggingface.co/papers/2110.13900) by Sanyuan Chen, Chengyi Wang, Zhengyang Chen, Yu Wu, Shujie Liu, Zhuo Chen,
 Jinyu Li, Naoyuki Kanda, Takuya Yoshioka, Xiong Xiao, Jian Wu, Long Zhou, Shuo Ren, Yanmin Qian, Yao Qian, Jian Wu,
 Michael Zeng, Furu Wei.
 
@@ -31,11 +33,16 @@ challenging. In this paper, we propose a new pre-trained model, WavLM, to solve 
 WavLM is built based on the HuBERT framework, with an emphasis on both spoken content modeling and speaker identity
 preservation. We first equip the Transformer structure with gated relative position bias to improve its capability on
 recognition tasks. For better speaker discrimination, we propose an utterance mixing training strategy, where
-additional overlapped utterances are created unsupervisely and incorporated during model training. Lastly, we scale up
+additional overlapped utterances are created unsupervisedly and incorporated during model training. Lastly, we scale up
 the training dataset from 60k hours to 94k hours. WavLM Large achieves state-of-the-art performance on the SUPERB
 benchmark, and brings significant improvements for various speech processing tasks on their representative benchmarks.*
 
-Tips:
+Relevant checkpoints can be found under https://huggingface.co/models?other=wavlm.
+
+This model was contributed by [patrickvonplaten](https://huggingface.co/patrickvonplaten). The Authors' code can be
+found [here](https://github.com/microsoft/unilm/tree/master/wavlm).
+
+## Usage tips
 
 - WavLM is a speech model that accepts a float array corresponding to the raw waveform of the speech signal. Please use
   [`Wav2Vec2Processor`] for the feature extraction.
@@ -43,12 +50,7 @@ Tips:
   using [`Wav2Vec2CTCTokenizer`].
 - WavLM performs especially well on speaker verification, speaker identification, and speaker diarization tasks.
 
-Relevant checkpoints can be found under https://huggingface.co/models?other=wavlm.
-
-This model was contributed by [patrickvonplaten](https://huggingface.co/patrickvonplaten). The Authors' code can be
-found [here](https://github.com/microsoft/unilm/tree/master/wavlm).
-
-## Documentation resources
+## Resources
 
 - [Audio classification task guide](../tasks/audio_classification)
 - [Automatic speech recognition task guide](../tasks/asr)

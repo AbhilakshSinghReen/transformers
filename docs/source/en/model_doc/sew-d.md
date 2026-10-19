@@ -9,17 +9,19 @@ Unless required by applicable law or agreed to in writing, software distributed 
 an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 
-⚠️ Note that this file is in Markdown but contain specific syntax for our doc-builder (similar to MDX) that may not be
+⚠️ Note that this file is in Markdown but contains specific syntax for our doc-builder (similar to MDX) that may not be
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2021-09-14 and contributed to Hugging Face Transformers on 2021-10-15.*
 
 # SEW-D
+
 
 ## Overview
 
 SEW-D (Squeezed and Efficient Wav2Vec with Disentangled attention) was proposed in [Performance-Efficiency Trade-offs
-in Unsupervised Pre-training for Speech Recognition](https://arxiv.org/abs/2109.06870) by Felix Wu, Kwangyoun Kim,
+in Unsupervised Pre-training for Speech Recognition](https://huggingface.co/papers/2109.06870) by Felix Wu, Kwangyoun Kim,
 Jing Pan, Kyu Han, Kilian Q. Weinberger, Yoav Artzi.
 
 The abstract from the paper is the following:
@@ -32,15 +34,15 @@ variety of training setups. For example, under the 100h-960h semi-supervised set
 inference speedup compared to wav2vec 2.0, with a 13.5% relative reduction in word error rate. With a similar inference
 time, SEW reduces word error rate by 25-50% across different model sizes.*
 
-Tips:
+This model was contributed by [anton-l](https://huggingface.co/anton-l).
+
+## Usage tips
 
 - SEW-D is a speech model that accepts a float array corresponding to the raw waveform of the speech signal.
 - SEWDForCTC is fine-tuned using connectionist temporal classification (CTC) so the model output has to be decoded
   using [`Wav2Vec2CTCTokenizer`].
 
-This model was contributed by [anton-l](https://huggingface.co/anton-l).
-
-## Documentation resources
+## Resources
 
 - [Audio classification task guide](../tasks/audio_classification)
 - [Automatic speech recognition task guide](../tasks/asr)

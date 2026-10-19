@@ -13,36 +13,43 @@ specific language governing permissions and limitations under the License.
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2022-05-12 and contributed to Hugging Face Transformers on 2023-02-10.*
 
 # X-MOD
 
+
 ## Overview
 
-The X-MOD model was proposed in [Lifting the Curse of Multilinguality by Pre-training Modular Transformers](http://dx.doi.org/10.18653/v1/2022.naacl-main.255) by Jonas Pfeiffer, Naman Goyal, Xi Lin, Xian Li, James Cross, Sebastian Riedel, and Mikel Artetxe.
-X-MOD extends multilingual masked language models like [XLM-R](xlm-roberta) to include language-specific modular components (_language adapters_) during pre-training. For fine-tuning, the language adapters in each transformer layer are frozen.
+The X-MOD model was proposed in [Lifting the Curse of Multilinguality by Pre-training Modular Transformers](https://huggingface.co/papers/2205.06266) by Jonas Pfeiffer, Naman Goyal, Xi Lin, Xian Li, James Cross, Sebastian Riedel, and Mikel Artetxe.
+X-MOD extends multilingual masked language models like [XLM-R](xlm-roberta) to include language-specific modular components (*language adapters*) during pre-training. For fine-tuning, the language adapters in each transformer layer are frozen.
 
 The abstract from the paper is the following:
 
 *Multilingual pre-trained models are known to suffer from the curse of multilinguality, which causes per-language performance to drop as they cover more languages. We address this issue by introducing language-specific modules, which allows us to grow the total capacity of the model, while keeping the total number of trainable parameters per language constant. In contrast with prior work that learns language-specific components post-hoc, we pre-train the modules of our Cross-lingual Modular (X-MOD) models from the start. Our experiments on natural language inference, named entity recognition and question answering show that our approach not only mitigates the negative interference between languages, but also enables positive transfer, resulting in improved monolingual and cross-lingual performance. Furthermore, our approach enables adding languages post-hoc with no measurable drop in performance, no longer limiting the model usage to the set of pre-trained languages.*
 
-Tips:
-- X-MOD is similar to [XLM-R](xlm-roberta), but a difference is that the input language needs to be specified so that the correct language adapter can be activated.
-- The main models – base and large – have adapters for 81 languages.
-
 This model was contributed by [jvamvas](https://huggingface.co/jvamvas).
 The original code can be found [here](https://github.com/facebookresearch/fairseq/tree/58cc6cca18f15e6d56e3f60c959fe4f878960a60/fairseq/models/xmod) and the original documentation is found [here](https://github.com/facebookresearch/fairseq/tree/58cc6cca18f15e6d56e3f60c959fe4f878960a60/examples/xmod).
+
+## Usage tips
+
+Tips:
+
+- X-MOD is similar to [XLM-R](xlm-roberta), but a difference is that the input language needs to be specified so that the correct language adapter can be activated.
+- The main models – base and large – have adapters for 81 languages.
 
 ## Adapter Usage
 
 ### Input language
 
 There are two ways to specify the input language:
+
 1. By setting a default language before using the model:
 
 ```python
 from transformers import XmodModel
 
-model = XmodModel.from_pretrained("facebook/xmod-base")
+
+model = XmodModel.from_pretrained("facebook/xmod-base", device_map="auto")
 model.set_default_language("en_XX")
 ```
 
@@ -50,6 +57,7 @@ model.set_default_language("en_XX")
 
 ```python
 import torch
+
 
 input_ids = torch.tensor(
     [
@@ -67,6 +75,7 @@ output = model(input_ids, lang_ids=lang_ids)
 ```
 
 ### Fine-tuning
+
 The paper recommends that the embedding layer and the language adapters are frozen during fine-tuning. A method for doing this is provided:
 
 ```python
@@ -75,6 +84,7 @@ model.freeze_embeddings_and_language_adapters()
 ```
 
 ### Cross-lingual transfer
+
 After fine-tuning, zero-shot cross-lingual transfer can be tested by activating the language adapter of the target language:
 
 ```python

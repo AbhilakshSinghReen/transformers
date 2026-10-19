@@ -13,15 +13,18 @@ specific language governing permissions and limitations under the License.
 rendered properly in your Markdown viewer.
 
 -->
+*This model was contributed to Hugging Face Transformers on 2022-09-30.*
 
 # ESM
 
+
 ## Overview
-This page provides code and pre-trained weights for Transformer protein language models from Meta AI's Fundamental 
+
+This page provides code and pre-trained weights for Transformer protein language models from Meta AI's Fundamental
 AI Research Team, providing the state-of-the-art ESMFold and ESM-2, and the previously released ESM-1b and ESM-1v.
 Transformer protein language models were introduced in the paper [Biological structure and function emerge from scaling
-unsupervised learning to 250 million protein sequences](https://www.pnas.org/content/118/15/e2016239118) by 
-Alexander Rives, Joshua Meier, Tom Sercu, Siddharth Goyal, Zeming Lin, Jason Liu, Demi Guo, Myle Ott, 
+unsupervised learning to 250 million protein sequences](https://www.pnas.org/content/118/15/e2016239118) by
+Alexander Rives, Joshua Meier, Tom Sercu, Siddharth Goyal, Zeming Lin, Jason Liu, Demi Guo, Myle Ott,
 C. Lawrence Zitnick, Jerry Ma, and Rob Fergus.
 The first version of this paper was [preprinted in 2019](https://www.biorxiv.org/content/10.1101/622803v1?versioned=true).
 
@@ -38,11 +41,9 @@ sequence alignment (MSA) step at inference time, which means that ESMFold checkp
 they do not require a database of known protein sequences and structures with associated external query tools
 to make predictions, and are much faster as a result.
 
-
-The abstract from 
-"Biological structure and function emerge from scaling unsupervised learning to 250 
+The abstract from
+"Biological structure and function emerge from scaling unsupervised learning to 250
 million protein sequences" is
-
 
 *In the field of artificial intelligence, a combination of scale in data and model capacity enabled by unsupervised
 learning has led to major advances in representation learning and statistical generation. In the life sciences, the
@@ -56,7 +57,6 @@ remote homology of proteins. Information about secondary and tertiary structure 
 can be identified by linear projections. Representation learning produces features that generalize across a range of
 applications, enabling state-of-the-art supervised prediction of mutational effect and secondary structure and
 improving state-of-the-art features for long-range contact prediction.*
-
 
 The abstract from
 "Language models of protein sequences at the scale of evolution enable accurate structure prediction" is
@@ -73,11 +73,6 @@ sequences with low perplexity that are well understood by the language model. ES
 order of magnitude faster than AlphaFold2, enabling exploration of the structural space of metagenomic
 proteins in practical timescales.*
 
-
-Tips:
-
-- ESM models are trained with a masked language modeling (MLM) objective.
-
 The original code can be found [here](https://github.com/facebookresearch/esm) and was
 was developed by the Fundamental AI Research team at Meta AI.
 ESM-1b, ESM-1v and ESM-2 were contributed to huggingface by [jasonliu](https://huggingface.co/jasonliu)
@@ -87,10 +82,12 @@ ESMFold was contributed to huggingface by [Matt](https://huggingface.co/Rocketkn
 [Sylvain](https://huggingface.co/sgugger), with a big thank you to Nikita Smetanin, Roshan Rao and Tom Sercu for their
 help throughout the process!
 
-The HuggingFace port of ESMFold uses portions of the [openfold](https://github.com/aqlaboratory/openfold) library.
-The `openfold` library is licensed under the Apache License 2.0.
+## Usage tips
 
-## Documentation resources
+- ESM models are trained with a masked language modeling (MLM) objective.
+- The HuggingFace port of ESMFold uses portions of the [openfold](https://github.com/aqlaboratory/openfold) library. The `openfold` library is licensed under the Apache License 2.0.
+
+## Resources
 
 - [Text classification task guide](../tasks/sequence_classification)
 - [Token classification task guide](../tasks/token_classification)
@@ -108,7 +105,6 @@ The `openfold` library is licensed under the Apache License 2.0.
     - get_special_tokens_mask
     - create_token_type_ids_from_sequences
     - save_vocabulary
-
 
 ## EsmModel
 
@@ -134,23 +130,3 @@ The `openfold` library is licensed under the Apache License 2.0.
 
 [[autodoc]] EsmForProteinFolding
     - forward
-
-## TFEsmModel
-
-[[autodoc]] TFEsmModel
-    - call
-
-## TFEsmForMaskedLM
-
-[[autodoc]] TFEsmForMaskedLM
-    - call
-
-## TFEsmForSequenceClassification
-
-[[autodoc]] TFEsmForSequenceClassification
-    - call
-
-## TFEsmForTokenClassification
-
-[[autodoc]] TFEsmForTokenClassification
-    - call

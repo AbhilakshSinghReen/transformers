@@ -9,25 +9,27 @@ Unless required by applicable law or agreed to in writing, software distributed 
 an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 
-⚠️ Note that this file is in Markdown but contain specific syntax for our doc-builder (similar to MDX) that may not be
+⚠️ Note that this file is in Markdown but contains specific syntax for our doc-builder (similar to MDX) that may not be
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2021-10-16 and contributed to Hugging Face Transformers on 2022-09-30.*
 
 # MarkupLM
 
 ## Overview
 
 The MarkupLM model was proposed in [MarkupLM: Pre-training of Text and Markup Language for Visually-rich Document
-Understanding](https://arxiv.org/abs/2110.08518) by Junlong Li, Yiheng Xu, Lei Cui, Furu Wei. MarkupLM is BERT, but
+Understanding](https://huggingface.co/papers/2110.08518) by Junlong Li, Yiheng Xu, Lei Cui, Furu Wei. MarkupLM is BERT, but
 applied to HTML pages instead of raw text documents. The model incorporates additional embedding layers to improve
 performance, similar to [LayoutLM](layoutlm).
 
 The model can be used for tasks like question answering on web pages or information extraction from web pages. It obtains
 state-of-the-art results on 2 important benchmarks:
+
 - [WebSRC](https://x-lance.github.io/WebSRC/), a dataset for Web-Based Structural Reading Comprehension (a bit like SQuAD but for web pages)
 - [SWDE](https://www.researchgate.net/publication/221299838_From_one_tree_to_a_forest_a_unified_solution_for_structured_web_data_extraction), a dataset
-for information extraction from web pages (basically named-entity recogntion on web pages)
+for information extraction from web pages (basically named-entity recognition on web pages)
 
 The abstract from the paper is the following:
 
@@ -40,18 +42,18 @@ HTML/XML-based documents, where text and markup information is jointly pre-train
 pre-trained MarkupLM significantly outperforms the existing strong baseline models on several document understanding
 tasks. The pre-trained model and code will be publicly available.*
 
-Tips:
+This model was contributed by [nielsr](https://huggingface.co/nielsr). The original code can be found [here](https://github.com/microsoft/unilm/tree/master/markuplm).
+
+## Usage tips
+
 - In addition to `input_ids`, [`~MarkupLMModel.forward`] expects 2 additional inputs, namely `xpath_tags_seq` and `xpath_subs_seq`.
 These are the XPATH tags and subscripts respectively for each token in the input sequence.
 - One can use [`MarkupLMProcessor`] to prepare all data for the model. Refer to the [usage guide](#usage-markuplmprocessor) for more info.
-- Demo notebooks can be found [here](https://github.com/NielsRogge/Transformers-Tutorials/tree/master/MarkupLM).
 
 <img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/model_doc/markuplm_architecture.jpg"
-alt="drawing" width="600"/> 
+alt="drawing" width="600"/>
 
-<small> MarkupLM architecture. Taken from the <a href="https://arxiv.org/abs/2110.08518">original paper.</a> </small>
-
-This model was contributed by [nielsr](https://huggingface.co/nielsr). The original code can be found [here](https://github.com/microsoft/unilm/tree/master/markuplm).
+<small> MarkupLM architecture. Taken from the <a href="https://huggingface.co/papers/2110.08518">original paper.</a> </small>
 
 ## Usage: MarkupLMProcessor
 
@@ -62,7 +64,8 @@ token-level inputs of the model (`input_ids` etc.). Note that you can still use 
 if you only want to handle one of the two tasks.
 
 ```python
-from transformers import MarkupLMFeatureExtractor, MarkupLMTokenizerFast, MarkupLMProcessor
+from transformers import MarkupLMFeatureExtractor, MarkupLMProcessor, MarkupLMTokenizerFast
+
 
 feature_extractor = MarkupLMFeatureExtractor()
 tokenizer = MarkupLMTokenizerFast.from_pretrained("microsoft/markuplm-base")
@@ -88,25 +91,26 @@ use cases work for both batched and non-batched inputs (we illustrate them for n
 This is the simplest case, in which the processor will use the feature extractor to get all nodes and xpaths from the HTML.
 
 ```python
->>> from transformers import MarkupLMProcessor
+from transformers import MarkupLMProcessor
 
->>> processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
 
->>> html_string = """
-...  <!DOCTYPE html>
-...  <html>
-...  <head>
-...  <title>Hello world</title>
-...  </head>
-...  <body>
-...  <h1>Welcome</h1>
-...  <p>Here is my website.</p>
-...  </body>
-...  </html>"""
+processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
 
->>> # note that you can also add provide all tokenizer parameters here such as padding, truncation
->>> encoding = processor(html_string, return_tensors="pt")
->>> print(encoding.keys())
+html_string = """
+ <!DOCTYPE html>
+ <html>
+ <head>
+ <title>Hello world</title>
+ </head>
+ <body>
+ <h1>Welcome</h1>
+ <p>Here is my website.</p>
+ </body>
+ </html>"""
+
+# note that you can also add provide all tokenizer parameters here such as padding, truncation
+encoding = processor(html_string, return_tensors="pt").to(model.device)
+print(encoding.keys())
 dict_keys(['input_ids', 'token_type_ids', 'attention_mask', 'xpath_tags_seq', 'xpath_subs_seq'])
 ```
 
@@ -116,15 +120,16 @@ In case one already has obtained all nodes and xpaths, one doesn't need the feat
 provide the nodes and corresponding xpaths themselves to the processor, and make sure to set `parse_html` to `False`.
 
 ```python
->>> from transformers import MarkupLMProcessor
+from transformers import MarkupLMProcessor
 
->>> processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
->>> processor.parse_html = False
 
->>> nodes = ["hello", "world", "how", "are"]
->>> xpaths = ["/html/body/div/li[1]/div/span", "/html/body/div/li[1]/div/span", "html/body", "html/body/div"]
->>> encoding = processor(nodes=nodes, xpaths=xpaths, return_tensors="pt")
->>> print(encoding.keys())
+processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
+processor.parse_html = False
+
+nodes = ["hello", "world", "how", "are"]
+xpaths = ["/html/body/div/li[1]/div/span", "/html/body/div/li[1]/div/span", "html/body", "html/body/div"]
+encoding = processor(nodes=nodes, xpaths=xpaths, return_tensors="pt").to(model.device)
+print(encoding.keys())
 dict_keys(['input_ids', 'token_type_ids', 'attention_mask', 'xpath_tags_seq', 'xpath_subs_seq'])
 ```
 
@@ -137,16 +142,17 @@ By default, it will only label the first wordpiece of a word, and label the rema
 initialize the tokenizer with `only_label_first_subword` set to `False`.
 
 ```python
->>> from transformers import MarkupLMProcessor
+from transformers import MarkupLMProcessor
 
->>> processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
->>> processor.parse_html = False
 
->>> nodes = ["hello", "world", "how", "are"]
->>> xpaths = ["/html/body/div/li[1]/div/span", "/html/body/div/li[1]/div/span", "html/body", "html/body/div"]
->>> node_labels = [1, 2, 2, 1]
->>> encoding = processor(nodes=nodes, xpaths=xpaths, node_labels=node_labels, return_tensors="pt")
->>> print(encoding.keys())
+processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
+processor.parse_html = False
+
+nodes = ["hello", "world", "how", "are"]
+xpaths = ["/html/body/div/li[1]/div/span", "/html/body/div/li[1]/div/span", "html/body", "html/body/div"]
+node_labels = [1, 2, 2, 1]
+encoding = processor(nodes=nodes, xpaths=xpaths, node_labels=node_labels, return_tensors="pt").to(model.device)
+print(encoding.keys())
 dict_keys(['input_ids', 'token_type_ids', 'attention_mask', 'xpath_tags_seq', 'xpath_subs_seq', 'labels'])
 ```
 
@@ -156,25 +162,26 @@ For question answering tasks on web pages, you can provide a question to the pro
 processor will use the feature extractor to get all nodes and xpaths, and create [CLS] question tokens [SEP] word tokens [SEP].
 
 ```python
->>> from transformers import MarkupLMProcessor
+from transformers import MarkupLMProcessor
 
->>> processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
 
->>> html_string = """
-...  <!DOCTYPE html>
-...  <html>
-...  <head>
-...  <title>Hello world</title>
-...  </head>
-...  <body>
-...  <h1>Welcome</h1>
-...  <p>My name is Niels.</p>
-...  </body>
-...  </html>"""
+processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
 
->>> question = "What's his name?"
->>> encoding = processor(html_string, questions=question, return_tensors="pt")
->>> print(encoding.keys())
+html_string = """
+ <!DOCTYPE html>
+ <html>
+ <head>
+ <title>Hello world</title>
+ </head>
+ <body>
+ <h1>Welcome</h1>
+ <p>My name is Niels.</p>
+ </body>
+ </html>"""
+
+question = "What's his name?"
+encoding = processor(html_string, questions=question, return_tensors="pt").to(model.device)
+print(encoding.keys())
 dict_keys(['input_ids', 'token_type_ids', 'attention_mask', 'xpath_tags_seq', 'xpath_subs_seq'])
 ```
 
@@ -184,21 +191,23 @@ For question answering tasks (such as WebSRC), you can provide a question to the
 all nodes and xpaths yourself, you can provide them directly to the processor. Make sure to set `parse_html` to `False`.
 
 ```python
->>> from transformers import MarkupLMProcessor
+from transformers import MarkupLMProcessor
 
->>> processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
->>> processor.parse_html = False
 
->>> nodes = ["hello", "world", "how", "are"]
->>> xpaths = ["/html/body/div/li[1]/div/span", "/html/body/div/li[1]/div/span", "html/body", "html/body/div"]
->>> question = "What's his name?"
->>> encoding = processor(nodes=nodes, xpaths=xpaths, questions=question, return_tensors="pt")
->>> print(encoding.keys())
+processor = MarkupLMProcessor.from_pretrained("microsoft/markuplm-base")
+processor.parse_html = False
+
+nodes = ["hello", "world", "how", "are"]
+xpaths = ["/html/body/div/li[1]/div/span", "/html/body/div/li[1]/div/span", "html/body", "html/body/div"]
+question = "What's his name?"
+encoding = processor(nodes=nodes, xpaths=xpaths, questions=question, return_tensors="pt").to(model.device)
+print(encoding.keys())
 dict_keys(['input_ids', 'token_type_ids', 'attention_mask', 'xpath_tags_seq', 'xpath_subs_seq'])
 ```
 
-## Documentation resources
+## Resources
 
+- [Demo notebooks](https://github.com/NielsRogge/Transformers-Tutorials/tree/master/MarkupLM)
 - [Text classification task guide](../tasks/sequence_classification)
 - [Token classification task guide](../tasks/token_classification)
 - [Question answering task guide](../tasks/question_answering)
@@ -224,7 +233,7 @@ dict_keys(['input_ids', 'token_type_ids', 'attention_mask', 'xpath_tags_seq', 'x
 ## MarkupLMTokenizerFast
 
 [[autodoc]] MarkupLMTokenizerFast
-    - all
+
 
 ## MarkupLMProcessor
 

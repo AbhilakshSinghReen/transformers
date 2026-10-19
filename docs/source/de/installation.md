@@ -22,11 +22,9 @@ rendered properly in your Markdown viewer.
 
 Installieren Sie 🤗 Transformers für die Deep-Learning-Bibliothek, mit der Sie arbeiten, richten Sie Ihren Cache ein und konfigurieren Sie 🤗 Transformers optional für den Offline-Betrieb.
 
-🤗 Transformers wurde unter Python 3.6+, PyTorch 1.1.0+, TensorFlow 2.0+, und Flax getestet. Folgen Sie den Installationsanweisungen unten für die von Ihnen verwendete Deep-Learning-Bibliothek:
+🤗 Transformers wurde unter Python 3.10+ und PyTorch 2.4+ getestet. Folgen Sie den Installationsanweisungen unten für die von Ihnen verwendete Deep-Learning-Bibliothek:
 
 * [PyTorch](https://pytorch.org/get-started/locally/) installation instructions.
-* [TensorFlow 2.0](https://www.tensorflow.org/install/pip) installation instructions.
-* [Flax](https://flax.readthedocs.io/en/latest/) installation instructions.
 
 ## Installation mit pip
 
@@ -62,18 +60,6 @@ Bei reiner CPU-Unterstützung können wir 🤗 Transformers und eine Deep-Learni
 pip install transformers[torch]
 ```
 
-🤗 Transformers und TensorFlow 2.0:
-
-```bash
-pip install transformers[tf-cpu]
-```
-
-🤗 Transformers und Flax:
-
-```bash
-pip install transformers[flax]
-```
-
 Überprüfen wir abschließend, ob 🤗 Transformers ordnungsgemäß installiert wurde, indem wir den folgenden Befehl ausführen. Es wird ein vortrainiertes Modell heruntergeladen:
 
 ```bash
@@ -94,7 +80,7 @@ Installieren wir 🤗 Transformers aus dem Quellcode mit dem folgenden Befehl:
 pip install git+https://github.com/huggingface/transformers
 ```
 
-Dieser Befehl installiert die aktuelle `main` Version und nicht die neueste `stable` Version. Die `main`-Version ist nützlich, um mit den neuesten Entwicklungen Schritt zu halten. Zum Beispiel, wenn ein Fehler seit der letzten offiziellen Version behoben wurde, aber eine neue Version noch nicht veröffentlicht wurde. Das bedeutet jedoch, dass die "Hauptversion" nicht immer stabil ist. Wir bemühen uns, die Hauptversion einsatzbereit zu halten, und die meisten Probleme werden normalerweise innerhalb weniger Stunden oder eines Tages behoben. Wenn Sie auf ein Problem stoßen, öffnen Sie bitte ein [Issue] (https://github.com/huggingface/transformers/issues), damit wir es noch schneller beheben können!
+Dieser Befehl installiert die aktuelle `main` Version und nicht die neueste `stable` Version. Die `main`-Version ist nützlich, um mit den neuesten Entwicklungen Schritt zu halten. Zum Beispiel, wenn ein Fehler seit der letzten offiziellen Version behoben wurde, aber eine neue Version noch nicht veröffentlicht wurde. Das bedeutet jedoch, dass die "Hauptversion" nicht immer stabil ist. Wir bemühen uns, die Hauptversion einsatzbereit zu halten, und die meisten Probleme werden normalerweise innerhalb weniger Stunden oder eines Tages behoben. Wenn Sie auf ein Problem stoßen, öffnen Sie bitte ein [Issue](https://github.com/huggingface/transformers/issues), damit wir es noch schneller beheben können!
 
 Überprüfen wir, ob 🤗 Transformers richtig installiert wurde, indem Sie den folgenden Befehl ausführen:
 
@@ -118,7 +104,7 @@ cd transformers
 pip install -e .
 ```
 
-Diese Befehle verknüpfen den Ordner, in den Sie das Repository geklont haben, mit den Pfaden Ihrer Python-Bibliotheken. Python wird nun in dem Ordner suchen, in den Sie geklont haben, zusätzlich zu den normalen Bibliothekspfaden. Wenn zum Beispiel Ihre Python-Pakete normalerweise in `~/anaconda3/envs/main/lib/python3.7/site-packages/` installiert sind, wird Python auch den Ordner durchsuchen, in den Sie geklont haben: `~/transformers/`.
+Diese Befehle verknüpfen den Ordner, in den Sie das Repository geklont haben, mit den Pfaden Ihrer Python-Bibliotheken. Python wird nun in dem Ordner suchen, in den Sie geklont haben, zusätzlich zu den normalen Bibliothekspfaden. Wenn zum Beispiel Ihre Python-Pakete normalerweise in `~/anaconda3/envs/main/lib/python3.10/site-packages/` installiert sind, wird Python auch den Ordner durchsuchen, in den Sie geklont haben: `~/transformers/`.
 
 
 <Tip warning={true}>
@@ -139,52 +125,30 @@ Ihre Python-Umgebung wird beim nächsten Ausführen die `main`-Version von 🤗 
 
 ## Installation mit conda
 
-Installation von dem conda Kanal `huggingface`:
+Installation von dem conda Kanal `conda-forge`:
 
 ```bash
-conda install -c huggingface transformers
+conda install conda-forge::transformers
 ```
 
 ## Cache Einrichtung
 
-Vorgefertigte Modelle werden heruntergeladen und lokal zwischengespeichert unter: `~/.cache/huggingface/hub`. Dies ist das Standardverzeichnis, das durch die Shell-Umgebungsvariable "TRANSFORMERS_CACHE" vorgegeben ist. Unter Windows wird das Standardverzeichnis durch `C:\Benutzer\Benutzername\.cache\huggingface\hub` angegeben. Sie können die unten aufgeführten Shell-Umgebungsvariablen - in der Reihenfolge ihrer Priorität - ändern, um ein anderes Cache-Verzeichnis anzugeben:
+Vorgefertigte Modelle werden heruntergeladen und lokal zwischengespeichert unter: `~/.cache/huggingface/hub`. Dies ist das Standardverzeichnis, das durch die Shell-Umgebungsvariable "HF_HUB_CACHE" vorgegeben ist. Unter Windows wird das Standardverzeichnis durch `C:\Benutzer\Benutzername\.cache\huggingface\hub` angegeben. Sie können die unten aufgeführten Shell-Umgebungsvariablen - in der Reihenfolge ihrer Priorität - ändern, um ein anderes Cache-Verzeichnis anzugeben:
 
-1. Shell-Umgebungsvariable (Standard): `HUGGINGFACE_HUB_CACHE` oder `TRANSFORMERS_CACHE`.
+1. Shell-Umgebungsvariable (Standard): `HF_HUB_CACHE`.
 2. Shell-Umgebungsvariable: `HF_HOME`.
 3. Shell-Umgebungsvariable: `XDG_CACHE_HOME` + `/huggingface`.
 
 
-<Tip>
-
-Transformers verwendet die Shell-Umgebungsvariablen `PYTORCH_TRANSFORMERS_CACHE` oder `PYTORCH_PRETRAINED_BERT_CACHE`, wenn Sie von einer früheren Iteration dieser Bibliothek kommen und diese Umgebungsvariablen gesetzt haben, sofern Sie nicht die Shell-Umgebungsvariable `TRANSFORMERS_CACHE` angeben.
-  
-</Tip>
-
 ## Offline Modus
 
-Transformers ist in der Lage, in einer Firewall- oder Offline-Umgebung zu laufen, indem es nur lokale Dateien verwendet. Setzen Sie die Umgebungsvariable `TRANSFORMERS_OFFLINE=1`, um dieses Verhalten zu aktivieren.
+Transformers ist in der Lage, in einer Firewall- oder Offline-Umgebung zu laufen, indem es nur lokale Dateien verwendet. Setzen Sie die Umgebungsvariable `HF_HUB_OFFLINE=1`, um dieses Verhalten zu aktivieren.
 
 <Tip>
 
 Fügen sie [🤗 Datasets](https://huggingface.co/docs/datasets/) zu Ihrem Offline-Trainingsworkflow hinzufügen, indem Sie die Umgebungsvariable `HF_DATASETS_OFFLINE=1` setzen.
 
 </Tip>
-
-So würden Sie beispielsweise ein Programm in einem normalen Netzwerk mit einer Firewall für externe Instanzen mit dem folgenden Befehl ausführen:
-
-```bash
-python examples/pytorch/translation/run_translation.py --model_name_or_path t5-small --dataset_name wmt16 --dataset_config ro-en ...
-```
-
-Führen Sie das gleiche Programm in einer Offline-Instanz mit aus:
-
-```bash
-HF_DATASETS_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
-python examples/pytorch/translation/run_translation.py --model_name_or_path t5-small --dataset_name wmt16 --dataset_config ro-en ...
-```
-
-Das Skript sollte nun laufen, ohne sich aufzuhängen oder eine Zeitüberschreitung abzuwarten, da es weiß, dass es nur nach lokalen Dateien suchen soll.
-
 
 ### Abrufen von Modellen und Tokenizern zur Offline-Verwendung
 
@@ -245,6 +209,6 @@ Sobald Ihre Datei heruntergeladen und lokal zwischengespeichert ist, geben Sie d
 
 <Tip>
 
-Weitere Informationen zum Herunterladen von Dateien, die auf dem Hub gespeichert sind, finden Sie im Abschnitt [Wie man Dateien vom Hub herunterlädt] (https://huggingface.co/docs/hub/how-to-downstream).
-  
+Weitere Informationen zum Herunterladen von Dateien, die auf dem Hub gespeichert sind, finden Sie im Abschnitt [Wie man Dateien vom Hub herunterlädt](https://huggingface.co/docs/hub/how-to-downstream).
+
 </Tip>

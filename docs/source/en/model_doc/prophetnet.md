@@ -13,25 +13,14 @@ specific language governing permissions and limitations under the License.
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2020-01-13 and contributed to Hugging Face Transformers on 2020-11-16.*
 
 # ProphetNet
 
-<div class="flex flex-wrap space-x-1">
-<a href="https://huggingface.co/models?filter=prophetnet">
-<img alt="Models" src="https://img.shields.io/badge/All_model_pages-prophetnet-blueviolet">
-</a>
-<a href="https://huggingface.co/spaces/docs-demos/prophetnet-large-uncased">
-<img alt="Spaces" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue">
-</a>
-</div>
-
-
-**DISCLAIMER:** If you see something strange, file a [Github Issue](https://github.com/huggingface/transformers/issues/new?assignees=&labels=&template=bug-report.md&title) and assign
-@patrickvonplaten
 
 ## Overview
 
-The ProphetNet model was proposed in [ProphetNet: Predicting Future N-gram for Sequence-to-Sequence Pre-training,](https://arxiv.org/abs/2001.04063) by Yu Yan, Weizhen Qi, Yeyun Gong, Dayiheng Liu, Nan Duan, Jiusheng Chen, Ruofei
+The ProphetNet model was proposed in [ProphetNet: Predicting Future N-gram for Sequence-to-Sequence Pre-training,](https://huggingface.co/papers/2001.04063) by Yu Yan, Weizhen Qi, Yeyun Gong, Dayiheng Liu, Nan Duan, Jiusheng Chen, Ruofei
 Zhang, Ming Zhou on 13 Jan, 2020.
 
 ProphetNet is an encoder-decoder model and can predict n-future tokens for "ngram" language modeling instead of just
@@ -49,15 +38,15 @@ dataset (160GB) respectively. Then we conduct experiments on CNN/DailyMail, Giga
 abstractive summarization and question generation tasks. Experimental results show that ProphetNet achieves new
 state-of-the-art results on all these datasets compared to the models using the same scale pretraining corpus.*
 
-Tips:
+The Authors' code can be found [here](https://github.com/microsoft/ProphetNet).
+
+## Usage tips
 
 - ProphetNet is a model with absolute position embeddings so it's usually advised to pad the inputs on the right rather than
   the left.
-- The model architecture is based on the original Transformer, but replaces the “standard” self-attention mechanism in the decoder by a a main self-attention mechanism and a self and n-stream (predict) self-attention mechanism.
+- The model architecture is based on the original Transformer, but replaces the “standard” self-attention mechanism in the decoder by a main self-attention mechanism and a self and n-stream (predict) self-attention mechanism.
 
-The Authors' code can be found [here](https://github.com/microsoft/ProphetNet).
-
-## Documentation resources
+## Resources
 
 - [Causal language modeling task guide](../tasks/language_modeling)
 - [Translation task guide](../tasks/translation)

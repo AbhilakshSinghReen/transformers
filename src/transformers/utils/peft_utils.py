@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import importlib
+import importlib.metadata
 import os
-from typing import Optional
 
 from packaging import version
 
@@ -28,18 +27,33 @@ ADAPTER_SAFE_WEIGHTS_NAME = "adapter_model.safetensors"
 
 def find_adapter_config_file(
     model_id: str,
-    revision: str = None,
-    subfolder: str = None,
-    token: Optional[str] = None,
-    commit_hash: Optional[str] = None,
-) -> Optional[str]:
+    cache_dir: str | os.PathLike | None = None,
+    force_download: bool = False,
+    proxies: dict[str, str] | None = None,
+    token: bool | str | None = None,
+    revision: str | None = None,
+    local_files_only: bool = False,
+    subfolder: str = "",
+) -> str | None:
     r"""
-    Simply checks if the model stored on the Hub or locally is an adapter model or not, return the path the the adapter
+    Simply checks if the model stored on the Hub or locally is an adapter model or not, return the path of the adapter
     config file if it is, None otherwise.
 
     Args:
         model_id (`str`):
             The identifier of the model to look for, can be either a local path or an id to the repository on the Hub.
+        cache_dir (`str` or `os.PathLike`, *optional*):
+            Path to a directory in which a downloaded pretrained model configuration should be cached if the standard
+            cache should not be used.
+        force_download (`bool`, *optional*, defaults to `False`):
+            Whether or not to force to (re-)download the configuration files and override the cached versions if they
+            exist.
+        proxies (`dict[str, str]`, *optional*):
+            A dictionary of proxy servers to use by protocol or endpoint, e.g., `{'http': 'foo.bar:3128',
+            'http://hostname': 'foo.bar:4012'}.` The proxies are used on each request.
+        token (`str` or *bool*, *optional*):
+            The token to use as HTTP bearer authorization for remote files. If `True`, will use the token generated
+            when running `hf auth login` (stored in `~/.huggingface`).
         revision (`str`, *optional*, defaults to `"main"`):
             The specific model version to use. It can be a branch name, a tag name, or a commit id, since we use a
             git-based system for storing models and other artifacts on huggingface.co, so `revision` can be any
@@ -51,12 +65,11 @@ def find_adapter_config_file(
 
             </Tip>
 
+        local_files_only (`bool`, *optional*, defaults to `False`):
+            If `True`, will only try to load the tokenizer configuration from local files.
         subfolder (`str`, *optional*, defaults to `""`):
             In case the relevant files are located inside a subfolder of the model repo on huggingface.co, you can
             specify the folder name here.
-        token (`str`, `optional`):
-            Whether to use authentication token to load the remote folder. Userful to load private repositories that
-            are on HuggingFace Hub. You might need to call `huggingface-cli login` and paste your tokens to cache it.
     """
     adapter_cached_filename = None
     if model_id is None:
@@ -69,10 +82,14 @@ def find_adapter_config_file(
         adapter_cached_filename = cached_file(
             model_id,
             ADAPTER_CONFIG_NAME,
-            revision=revision,
+            cache_dir=cache_dir,
+            force_download=force_download,
+            proxies=proxies,
             token=token,
-            _commit_hash=commit_hash,
+            revision=revision,
+            local_files_only=local_files_only,
             subfolder=subfolder,
+            _raise_exceptions_for_gated_repo=False,
             _raise_exceptions_for_missing_entries=False,
             _raise_exceptions_for_connection_errors=False,
         )
@@ -85,16 +102,13 @@ def check_peft_version(min_version: str) -> None:
     Checks if the version of PEFT is compatible.
 
     Args:
-        version (`str`):
+        min_version (`str`):
             The version of PEFT to check against.
     """
     if not is_peft_available():
         raise ValueError("PEFT is not installed. Please install it with `pip install peft`")
 
-    is_peft_version_compatible = version.parse(importlib.metadata.version("peft")) <= version.parse(min_version)
+    is_peft_version_compatible = version.parse(importlib.metadata.version("peft")) >= version.parse(min_version)
 
     if not is_peft_version_compatible:
-        raise ValueError(
-            f"The version of PEFT you are using is not compatible, please use a version that is greater"
-            f" than {min_version}"
-        )
+        raise ValueError(f"The version of PEFT you are using is not compatible, please use a version >= {min_version}")

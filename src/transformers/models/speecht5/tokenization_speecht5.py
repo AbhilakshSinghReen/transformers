@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2023 The Facebook Inc. and The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,37 +13,21 @@
 # limitations under the License.
 """Tokenization class for SpeechT5."""
 
+from typing import Any
 
-import os
-from shutil import copyfile
-from typing import Any, Dict, List, Optional, Tuple
-
-import sentencepiece as spm
-
-from ...tokenization_utils import PreTrainedTokenizer
+from ...tokenization_utils_sentencepiece import SentencePieceBackend
 from ...utils import logging
+from ...utils.import_utils import requires
+from .number_normalizer import EnglishNumberNormalizer
 
 
 logger = logging.get_logger(__name__)
 
 VOCAB_FILES_NAMES = {"vocab_file": "spm_char.model"}
 
-PRETRAINED_VOCAB_FILES_MAP = {
-    "vocab_file": {
-        "microsoft/speecht5_asr": "https://huggingface.co/microsoft/speecht5_asr/resolve/main/spm_char.model",
-        "microsoft/speecht5_tts": "https://huggingface.co/microsoft/speecht5_tts/resolve/main/spm_char.model",
-        "microsoft/speecht5_vc": "https://huggingface.co/microsoft/speecht5_vc/resolve/main/spm_char.model",
-    }
-}
 
-PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
-    "microsoft/speecht5_asr": 1024,
-    "microsoft/speecht5_tts": 1024,
-    "microsoft/speecht5_vc": 1024,
-}
-
-
-class SpeechT5Tokenizer(PreTrainedTokenizer):
+@requires(backends=("sentencepiece",))
+class SpeechT5Tokenizer(SentencePieceBackend):
     """
     Construct a SpeechT5 tokenizer. Based on [SentencePiece](https://github.com/google/sentencepiece).
 
@@ -55,15 +38,17 @@ class SpeechT5Tokenizer(PreTrainedTokenizer):
         vocab_file (`str`):
             [SentencePiece](https://github.com/google/sentencepiece) file (generally has a *.spm* extension) that
             contains the vocabulary necessary to instantiate a tokenizer.
-        eos_token (`str`, *optional*, defaults to `"</s>"`):
-            The end of sequence token.
         bos_token (`str`, *optional*, defaults to `"<s>"`):
             The begin of sequence token.
+        eos_token (`str`, *optional*, defaults to `"</s>"`):
+            The end of sequence token.
         unk_token (`str`, *optional*, defaults to `"<unk>"`):
             The unknown token. A token that is not in the vocabulary cannot be converted to an ID and is set to be this
             token instead.
         pad_token (`str`, *optional*, defaults to `"<pad>"`):
             The token used for padding, for example when batching sequences of different lengths.
+        normalize (`bool`, *optional*, defaults to `False`):
+            Whether to convert numeric quantities in the text to their spelt-out english counterparts.
         sp_model_kwargs (`dict`, *optional*):
             Will be passed to the `SentencePieceProcessor.__init__()` method. The [Python wrapper for
             SentencePiece](https://github.com/google/sentencepiece/tree/master/python) can be used, among other things,
@@ -86,9 +71,8 @@ class SpeechT5Tokenizer(PreTrainedTokenizer):
     """
 
     vocab_files_names = VOCAB_FILES_NAMES
-    pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP
-    max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
     model_input_names = ["input_ids", "attention_mask"]
+    is_fast = False
 
     def __init__(
         self,
@@ -97,77 +81,47 @@ class SpeechT5Tokenizer(PreTrainedTokenizer):
         eos_token="</s>",
         unk_token="<unk>",
         pad_token="<pad>",
-        sp_model_kwargs: Optional[Dict[str, Any]] = None,
+        normalize=False,
+        sp_model_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ) -> None:
-        self.sp_model_kwargs = {} if sp_model_kwargs is None else sp_model_kwargs
+        self.normalize = normalize
+        self._normalizer = None
 
+        # Prepare sp_model_kwargs for parent class
+        if sp_model_kwargs is not None:
+            kwargs["sp_model_kwargs"] = sp_model_kwargs
+
+        # Call parent init (which will load sp_model)
         super().__init__(
+            vocab_file=vocab_file,
             bos_token=bos_token,
             eos_token=eos_token,
             unk_token=unk_token,
             pad_token=pad_token,
-            sp_model_kwargs=self.sp_model_kwargs,
+            normalize=normalize,
             **kwargs,
         )
 
-        self.vocab_file = vocab_file
-
-        self.sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
-        self.sp_model.Load(vocab_file)
+    def prepare_for_tokenization(self, text, is_split_into_words=False, **kwargs):
+        normalize = kwargs.pop("normalize", self.normalize)
+        if is_split_into_words:
+            text = " " + text
+        if normalize:
+            text = self.normalizer(text)
+        return (text, kwargs)
 
     @property
-    def vocab_size(self):
-        return self.sp_model.get_piece_size()
+    def normalizer(self):
+        if self._normalizer is None:
+            self._normalizer = EnglishNumberNormalizer()
+        return self._normalizer
 
-    def get_vocab(self):
-        vocab = {self.convert_ids_to_tokens(i): i for i in range(self.vocab_size)}
-        vocab.update(self.added_tokens_encoder)
-        return vocab
+    @normalizer.setter
+    def normalizer(self, value):
+        self._normalizer = value
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["sp_model"] = None
-        return state
-
-    def __setstate__(self, d):
-        self.__dict__ = d
-
-        # for backward compatibility
-        if not hasattr(self, "sp_model_kwargs"):
-            self.sp_model_kwargs = {}
-
-        self.sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
-        self.sp_model.Load(self.vocab_file)
-
-    def _tokenize(self, text: str) -> List[str]:
-        """Take as input a string and return a list of strings (tokens) for words/sub-words"""
-        return self.sp_model.encode(text, out_type=str)
-
-    def _convert_token_to_id(self, token):
-        """Converts a token (str) in an id using the vocab."""
-        return self.sp_model.piece_to_id(token)
-
-    def _convert_id_to_token(self, index):
-        """Converts an index (integer) in a token (str) using the vocab."""
-        token = self.sp_model.IdToPiece(index)
-        return token
-
-    def convert_tokens_to_string(self, tokens):
-        """Converts a sequence of tokens (string) in a single string."""
-        current_sub_tokens = []
-        out_string = ""
-        for token in tokens:
-            # make sure that special tokens are not decoded using sentencepiece model
-            if token in self.all_special_tokens:
-                out_string += self.sp_model.decode(current_sub_tokens) + token
-                current_sub_tokens = []
-            else:
-                current_sub_tokens.append(token)
-        out_string += self.sp_model.decode(current_sub_tokens)
-        return out_string.strip()
-
-    def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None) -> List[int]:
+    def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None) -> list[int]:
         """Build model inputs from a sequence by appending eos_token_id."""
         if token_ids_1 is None:
             return token_ids_0 + [self.eos_token_id]
@@ -175,8 +129,8 @@ class SpeechT5Tokenizer(PreTrainedTokenizer):
         return token_ids_0 + token_ids_1 + [self.eos_token_id]
 
     def get_special_tokens_mask(
-        self, token_ids_0: List[int], token_ids_1: Optional[List[int]] = None, already_has_special_tokens: bool = False
-    ) -> List[int]:
+        self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
+    ) -> list[int]:
         if already_has_special_tokens:
             return super().get_special_tokens_mask(
                 token_ids_0=token_ids_0, token_ids_1=token_ids_1, already_has_special_tokens=True
@@ -187,19 +141,26 @@ class SpeechT5Tokenizer(PreTrainedTokenizer):
             return ([0] * len(token_ids_0)) + suffix_ones
         return ([0] * len(token_ids_0)) + ([0] * len(token_ids_1)) + suffix_ones
 
-    def save_vocabulary(self, save_directory: str, filename_prefix: Optional[str] = None) -> Tuple[str]:
-        if not os.path.isdir(save_directory):
-            logger.error(f"Vocabulary path ({save_directory}) should be a directory")
-            return
-        out_vocab_file = os.path.join(
-            save_directory, (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["vocab_file"]
-        )
+    def create_token_type_ids_from_sequences(
+        self, token_ids_0: list[int], token_ids_1: list[int] | None = None
+    ) -> list[int]:
+        """
+        Create a mask from the two sequences passed to be used in a sequence-pair classification task. SpeechT5 does not
+        make use of token type ids, therefore a list of zeros is returned.
 
-        if os.path.abspath(self.vocab_file) != os.path.abspath(out_vocab_file) and os.path.isfile(self.vocab_file):
-            copyfile(self.vocab_file, out_vocab_file)
-        elif not os.path.isfile(self.vocab_file):
-            with open(out_vocab_file, "wb") as fi:
-                content_spiece_model = self.sp_model.serialized_model_proto()
-                fi.write(content_spiece_model)
+        Args:
+            token_ids_0 (`list[int]`):
+                List of IDs.
+            token_ids_1 (`list[int]`, *optional*):
+                Optional second list of IDs for sequence pairs.
 
-        return (out_vocab_file,)
+        Returns:
+            `list[int]`: List of zeros.
+        """
+        eos = [self.eos_token_id]
+        if token_ids_1 is None:
+            return len(token_ids_0 + eos) * [0]
+        return len(token_ids_0 + token_ids_1 + eos) * [0]
+
+
+__all__ = ["SpeechT5Tokenizer"]

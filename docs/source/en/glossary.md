@@ -9,7 +9,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 
-⚠️ Note that this file is in Markdown but contain specific syntax for our doc-builder (similar to MDX) that may not be
+⚠️ Note that this file is in Markdown but contains specific syntax for our doc-builder (similar to MDX) that may not be
 rendered properly in your Markdown viewer.
 
 -->
@@ -34,7 +34,7 @@ For example, consider these two sequences:
 ```python
 >>> from transformers import BertTokenizer
 
->>> tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
+>>> tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-cased")
 
 >>> sequence_a = "This is a short sequence."
 >>> sequence_b = "This is a rather long sequence. It is at least longer than the sequence A."
@@ -67,7 +67,7 @@ We can see that 0s have been added on the right of the first sentence to make it
 [[101, 1188, 1110, 170, 1603, 4954, 119, 102, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [101, 1188, 1110, 170, 1897, 1263, 4954, 119, 1135, 1110, 1120, 1655, 2039, 1190, 1103, 4954, 138, 119, 102]]
 ```
 
-This can then be converted into a tensor in PyTorch or TensorFlow. The attention mask is a binary tensor indicating the
+This can then be converted into a tensor in PyTorch. The attention mask is a binary tensor indicating the
 position of the padded indices so that the model does not attend to them. For the [`BertTokenizer`], `1` indicates a
 value that should be attended to, while `0` indicates a padded value. This attention mask is in the dictionary returned
 by the tokenizer under the key "attention_mask":
@@ -89,7 +89,7 @@ See [causal language modeling](#causal-language-modeling) and [decoder models](#
 
 ### backbone
 
-The backbone is the network (embeddings and layers) that outputs the raw hidden states or features. It is usually connected to a [head](#head) which accepts the features as its input to make a prediction. For example, [`ViTModel`] is a backbone without a specific head on top. Other models can also use [`VitModel`] as a backbone such as [DPT](model_doc/dpt).
+The backbone is the network (embeddings and layers) that outputs the raw hidden states or features. It is usually connected to a [head](#head) which accepts the features as its input to make a prediction. For example, [`ViTModel`] is a backbone without a specific head on top. Other models can also use [`ViTModel`] as a backbone such as [DPT](./model_doc/dpt).
 
 ## C
 
@@ -100,7 +100,7 @@ reading the whole sentence but using a mask inside the model to hide the future 
 
 ### channel
 
-Color images are made up of some combination of values in three channels - red, green, and blue (RGB) - and grayscale images only have one channel. In 🤗 Transformers, the channel can be the first or last dimension of an image's tensor: [`n_channels`, `height`, `width`] or [`height`, `width`, `n_channels`].
+Color images are made up of some combination of values in three channels: red, green, and blue (RGB) and grayscale images only have one channel. In 🤗 Transformers, the channel can be the first or last dimension of an image's tensor: [`n_channels`, `height`, `width`] or [`height`, `width`, `n_channels`].
 
 ### connectionist temporal classification (CTC)
 
@@ -111,6 +111,13 @@ An algorithm which allows a model to learn without knowing exactly how the input
 A type of layer in a neural network where the input matrix is multiplied element-wise by a smaller matrix (kernel or filter) and the values are summed up in a new matrix. This is known as a convolutional operation which is repeated over the entire input matrix. Each operation is applied to a different segment of the input matrix. Convolutional neural networks (CNNs) are commonly used in computer vision.
 
 ## D
+
+### DataParallel (DP)
+
+Parallelism technique for training on multiple GPUs where the same setup is replicated multiple times, with each instance
+receiving a distinct data slice. The processing is done in parallel and all setups are synchronized at the end of each training step.
+
+Learn more about [DataParallel](./perf_train_gpu_many#dataparallel).
 
 ### decoder input IDs
 
@@ -132,7 +139,7 @@ reading the whole sentence with a mask to hide future tokens at a certain timest
 
 ### deep learning (DL)
 
-Machine learning algorithms which uses neural networks with several layers.
+Machine learning algorithms which use neural networks with several layers.
 
 ## E
 
@@ -152,15 +159,14 @@ The process of selecting and transforming raw data into a set of features that a
 
 In each residual attention block in transformers the self-attention layer is usually followed by 2 feed forward layers.
 The intermediate embedding size of the feed forward layers is often bigger than the hidden size of the model (e.g., for
-`bert-base-uncased`).
+`google-bert/bert-base-uncased`).
 
 For an input of size `[batch_size, sequence_length]`, the memory required to store the intermediate feed forward
 embeddings `[batch_size, sequence_length, config.intermediate_size]` can account for a large fraction of the memory
-use. The authors of [Reformer: The Efficient Transformer](https://arxiv.org/abs/2001.04451) noticed that since the
+use. The authors of [Reformer: The Efficient Transformer](https://huggingface.co/papers/2001.04451) noticed that since the
 computation is independent of the `sequence_length` dimension, it is mathematically equivalent to compute the output
 embeddings of both feed forward layers `[batch_size, config.hidden_size]_0, ..., [batch_size, config.hidden_size]_n`
-individually and concat them afterward to `[batch_size, sequence_length, config.hidden_size]` with `n =
-sequence_length`, which trades increased computation time against reduced memory use, but yields a mathematically
+individually and concat them afterward to `[batch_size, sequence_length, config.hidden_size]` with `n = sequence_length`, which trades increased computation time against reduced memory use, but yields a mathematically
 **equivalent** result.
 
 For models employing the function [`apply_chunking_to_forward`], the `chunk_size` defines the number of output
@@ -171,7 +177,7 @@ embeddings that are computed in parallel and thus defines the trade-off between 
 
 Finetuning is a form of transfer learning which involves taking a pretrained model, freezing its weights, and replacing the output layer with a newly added [model head](#head). The model head is trained on your target dataset.
 
-See the [Fine-tune a pretrained model](https://huggingface.co/docs/transformers/training) tutorial for more details, and learn how to fine-tune models with 🤗 Transformers.
+See the [Fine-tune a pretrained model](./training) tutorial for more details, and learn how to fine-tune models with 🤗 Transformers.
 
 ## H
 
@@ -179,19 +185,19 @@ See the [Fine-tune a pretrained model](https://huggingface.co/docs/transformers/
 
 The model head refers to the last layer of a neural network that accepts the raw hidden states and projects them onto a different dimension. There is a different model head for each task. For example:
 
-  * [`GPT2ForSequenceClassification`] is a sequence classification head - a linear layer - on top of the base [`GPT2Model`].
-  * [`ViTForImageClassification`] is an image classification head - a linear layer on top of the final hidden state of the `CLS` token - on top of the base [`ViTModel`].
-  * [`Wav2Vec2ForCTC`] ia a language modeling head with [CTC](#connectionist-temporal-classification-(CTC)) on top of the base [`Wav2Vec2Model`].
+* [`GPT2ForSequenceClassification`] is a sequence classification head - a linear layer - on top of the base [`GPT2Model`].
+* [`ViTForImageClassification`] is an image classification head - a linear layer on top of the final hidden state of the `CLS` token - on top of the base [`ViTModel`].
+* [`Wav2Vec2ForCTC`] is a language modeling head with [CTC](#connectionist-temporal-classification-ctc) on top of the base [`Wav2Vec2Model`].
 
 ## I
 
 ### image patch
 
-Vision-based Transformers models split an image into smaller patches which are linearly embedded, and then passed as a sequence to the model. You can find the `patch_size` - or resolution - of the model in it's configuration.
+Vision-based Transformers models split an image into smaller patches which are linearly embedded, and then passed as a sequence to the model. You can find the `patch_size` - or resolution - of the model in its configuration.
 
 ### inference
 
-Inference is the process of evaluating a model on new data after training is complete. See the [Pipeline for inference](https://huggingface.co/docs/transformers/pipeline_tutorial) tutorial to learn how to perform inference with 🤗 Transformers.
+Inference is the process of evaluating a model on new data after training is complete. See the [Pipeline for inference](./pipeline_tutorial) tutorial to learn how to perform inference with 🤗 Transformers.
 
 ### input IDs
 
@@ -201,12 +207,12 @@ numerical representations of tokens building the sequences that will be used as 
 <Youtube id="VFp38yj8h3A"/>
 
 Each tokenizer works differently but the underlying mechanism remains the same. Here's an example using the BERT
-tokenizer, which is a [WordPiece](https://arxiv.org/pdf/1609.08144.pdf) tokenizer:
+tokenizer, which is a [WordPiece](https://huggingface.co/papers/1609.08144) tokenizer:
 
 ```python
 >>> from transformers import BertTokenizer
 
->>> tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
+>>> tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-cased")
 
 >>> sequence = "A Titan RTX has 24GB of VRAM"
 ```
@@ -226,9 +232,7 @@ is added for "RA" and "M":
 ['A', 'Titan', 'R', '##T', '##X', 'has', '24', '##GB', 'of', 'V', '##RA', '##M']
 ```
 
-These tokens can then be converted into IDs which are understandable by the model. This can be done by directly feeding
-the sentence to the tokenizer, which leverages the Rust implementation of [🤗
-Tokenizers](https://github.com/huggingface/tokenizers) for peak performance.
+These tokens can then be converted into IDs which are understandable by the model. This can be done by directly feeding the sentence to the tokenizer, which leverages the Rust implementation of [🤗 Tokenizers](https://github.com/huggingface/tokenizers) for peak performance.
 
 ```python
 >>> inputs = tokenizer(sequence)
@@ -291,7 +295,7 @@ These labels are different according to the model head, for example:
   `class_labels` and `boxes` key where each value of the batch corresponds to the expected label and number of bounding boxes of each individual image.
 - For automatic speech recognition models, ([`Wav2Vec2ForCTC`]), the model expects a tensor of dimension `(batch_size,
   target_length)` with each value corresponding to the expected label of each individual token.
-  
+
 <Tip>
 
 Each model's labels may be different, so be sure to always check the documentation of each model for more information
@@ -338,7 +342,13 @@ whole text, individual words).
 
 A pipeline in 🤗 Transformers is an abstraction referring to a series of steps that are executed in a specific order to preprocess and transform data and return a prediction from a model. Some example stages found in a pipeline might be data preprocessing, feature extraction, and normalization.
 
-For more details, see [Pipelines for inference](https://huggingface.co/docs/transformers/pipeline_tutorial).
+For more details, see [Pipelines for inference](./pipeline_tutorial).
+
+### PipelineParallel (PP)
+
+Parallelism technique in which the model is split up vertically (layer-level) across multiple GPUs, so that only one or
+several layers of the model are placed on a single GPU. Each GPU processes in parallel different stages of the pipeline
+and working on a small chunk of the batch. Learn more about [PipelineParallel](./perf_train_gpu_many#pipeline-parallelism).
 
 ### pixel values
 
@@ -369,9 +379,9 @@ The task of preparing raw data into a format that can be easily consumed by mach
 A model that has been pretrained on some data (for instance all of Wikipedia). Pretraining methods involve a
 self-supervised objective, which can be reading the text and trying to predict the next word (see [causal language
 modeling](#causal-language-modeling)) or masking some words and trying to predict them (see [masked language
-modeling](#masked-language-modeling-mlm)). 
+modeling](#masked-language-modeling-mlm)).
 
-  Speech and vision models have their own pretraining objectives. For example, Wav2Vec2 is a speech model pretrained on a contrastive task which requires the model to identify the "true" speech representation from a set of "false" speech representations. On the other hand, BEiT is a vision model pretrained on a masked image modeling task which masks some of the image patches and requires the model to predict the masked patches (similar to the masked language modeling objective).
+Speech and vision models have their own pretraining objectives. For example, Wav2Vec2 is a speech model pretrained on a contrastive task which requires the model to identify the "true" speech representation from a set of "false" speech representations. On the other hand, BEiT is a vision model pretrained on a masked image modeling task which masks some of the image patches and requires the model to predict the masked patches (similar to the masked language modeling objective).
 
 ## R
 
@@ -393,9 +403,9 @@ A measurement in hertz of the number of samples (the audio signal) taken per sec
 
 Each element of the input finds out which other elements of the input they should attend to.
 
-### self-supervised learning 
+### self-supervised learning
 
-A category of machine learning techniques in which a model creates its own learning objective from unlabeled data. It differs from [unsupervised learning](#unsupervised-learning) and [supervised learning](#supervised-learning) in that the learning process is supervised, but not explicitly from the user. 
+A category of machine learning techniques in which a model creates its own learning objective from unlabeled data. It differs from [unsupervised learning](#unsupervised-learning) and [supervised learning](#supervised-learning) in that the learning process is supervised, but not explicitly from the user.
 
 One example of self-supervised learning is [masked language modeling](#masked-language-modeling-mlm), where a model is passed sentences with a proportion of its tokens removed and learns to predict the missing tokens.
 
@@ -408,7 +418,11 @@ An example of a semi-supervised learning approach is "self-training", in which a
 ### sequence-to-sequence (seq2seq)
 
 Models that generate a new sequence from an input, like translation models, or summarization models (such as
-[Bart](model_doc/bart) or [T5](model_doc/t5)).
+[Bart](./model_doc/bart) or [T5](./model_doc/t5)).
+
+### Sharded DDP
+
+Another name for the foundational [ZeRO](#zero-redundancy-optimizer-zero) concept as used by various other implementations of ZeRO.
 
 ### stride
 
@@ -420,12 +434,20 @@ A form of model training that directly uses labeled data to correct and instruct
 
 ## T
 
+### Tensor Parallelism (TP)
+
+Parallelism technique for training on multiple GPUs in which each tensor is split up into multiple chunks, so instead of
+having the whole tensor reside on a single GPU, each shard of the tensor resides on its designated GPU. Shards get
+processed separately and in parallel on different GPUs and the results are synced at the end of the processing step.
+This is what is sometimes called horizontal parallelism, as the splitting happens on horizontal level.
+Learn more about Tensor Parallelism [here](./perf_train_gpu_many#tensor-parallelism).
+
 ### token
 
 A part of a sentence, usually a word, but can also be a subword (non-common words are often split in subwords) or a
 punctuation symbol.
 
-### token Type IDs
+### token type IDs
 
 Some models' purpose is to do classification on pairs of sentences or question answering.
 
@@ -445,7 +467,7 @@ arguments (and not a list, like before) like this:
 ```python
 >>> from transformers import BertTokenizer
 
->>> tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
+>>> tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-cased")
 >>> sequence_a = "HuggingFace is based in NYC"
 >>> sequence_b = "Where is HuggingFace based?"
 
@@ -489,3 +511,12 @@ Self-attention based deep learning model architecture.
 ### unsupervised learning
 
 A form of model training in which data provided to the model is not labeled. Unsupervised learning techniques leverage statistical information of the data distribution to find patterns useful for the task at hand.
+
+## Z
+
+### Zero Redundancy Optimizer (ZeRO)
+
+Parallelism technique which performs sharding of the tensors somewhat similar to [TensorParallel](#tensor-parallelism-tp),
+except the whole tensor gets reconstructed in time for a forward or backward computation, therefore the model doesn't need
+to be modified. This method also supports various offloading techniques to compensate for limited GPU memory.
+Learn more about ZeRO [here](./perf_train_gpu_many#zero-data-parallelism).

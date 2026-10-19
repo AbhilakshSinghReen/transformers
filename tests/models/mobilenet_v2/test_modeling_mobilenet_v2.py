@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2022 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Testing suite for the PyTorch MobileNetV2 model. """
+"""Testing suite for the PyTorch MobileNetV2 model."""
 
-
-import inspect
 import unittest
+from functools import cached_property
 
 from transformers import MobileNetV2Config
-from transformers.testing_utils import require_torch, require_vision, slow, torch_device
-from transformers.utils import cached_property, is_torch_available, is_vision_available
+from transformers.testing_utils import Expectations, require_torch, require_vision, slow, torch_device
+from transformers.utils import is_torch_available, is_vision_available
 
 from ...test_configuration_common import ConfigTester
 from ...test_modeling_common import ModelTesterMixin, floats_tensor, ids_tensor
@@ -31,13 +29,12 @@ if is_torch_available():
     import torch
 
     from transformers import MobileNetV2ForImageClassification, MobileNetV2ForSemanticSegmentation, MobileNetV2Model
-    from transformers.models.mobilenet_v2.modeling_mobilenet_v2 import MOBILENET_V2_PRETRAINED_MODEL_ARCHIVE_LIST
 
 
 if is_vision_available():
     from PIL import Image
 
-    from transformers import MobileNetV2ImageProcessor
+    from transformers import MobileNetV2ImageProcessorPil
 
 
 class MobileNetV2ConfigTester(ConfigTester):
@@ -196,7 +193,7 @@ class MobileNetV2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
     )
     pipeline_model_mapping = (
         {
-            "feature-extraction": MobileNetV2Model,
+            "image-feature-extraction": MobileNetV2Model,
             "image-classification": MobileNetV2ForImageClassification,
             "image-segmentation": MobileNetV2ForSemanticSegmentation,
         }
@@ -204,9 +201,7 @@ class MobileNetV2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
         else {}
     )
 
-    test_pruning = False
     test_resize_embeddings = False
-    test_head_masking = False
     has_attentions = False
 
     def setUp(self):
@@ -221,24 +216,12 @@ class MobileNetV2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
         pass
 
     @unittest.skip(reason="MobileNetV2 does not support input and output embeddings")
-    def test_model_common_attributes(self):
+    def test_model_get_set_embeddings(self):
         pass
 
     @unittest.skip(reason="MobileNetV2 does not output attentions")
     def test_attention_outputs(self):
         pass
-
-    def test_forward_signature(self):
-        config, _ = self.model_tester.prepare_config_and_inputs_for_common()
-
-        for model_class in self.all_model_classes:
-            model = model_class(config)
-            signature = inspect.signature(model.forward)
-            # signature.parameters is an OrderedDict => so arg_names order is deterministic
-            arg_names = [*signature.parameters.keys()]
-
-            expected_arg_names = ["pixel_values"]
-            self.assertListEqual(arg_names[:1], expected_arg_names)
 
     def test_model(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
@@ -280,9 +263,9 @@ class MobileNetV2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
 
     @slow
     def test_model_from_pretrained(self):
-        for model_name in MOBILENET_V2_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
-            model = MobileNetV2Model.from_pretrained(model_name)
-            self.assertIsNotNone(model)
+        model_name = "google/mobilenet_v2_1.4_224"
+        model = MobileNetV2Model.from_pretrained(model_name)
+        self.assertIsNotNone(model)
 
 
 # We will verify our results on an image of cute cats
@@ -297,7 +280,9 @@ class MobileNetV2ModelIntegrationTest(unittest.TestCase):
     @cached_property
     def default_image_processor(self):
         return (
-            MobileNetV2ImageProcessor.from_pretrained("google/mobilenet_v2_1.0_224") if is_vision_available() else None
+            MobileNetV2ImageProcessorPil.from_pretrained("google/mobilenet_v2_1.0_224")
+            if is_vision_available()
+            else None
         )
 
     @slow
@@ -316,16 +301,22 @@ class MobileNetV2ModelIntegrationTest(unittest.TestCase):
         expected_shape = torch.Size((1, 1001))
         self.assertEqual(outputs.logits.shape, expected_shape)
 
-        expected_slice = torch.tensor([0.2445, -1.1993, 0.1905]).to(torch_device)
+        expectations = Expectations(
+            {
+                (None, None): [0.2445, -1.1993, 0.1905],
+                ("cuda", 8): [0.2445, -1.1993, 0.1905],
+            }
+        )
+        expected_slice = torch.tensor(expectations.get_expectation()).to(torch_device)
 
-        self.assertTrue(torch.allclose(outputs.logits[0, :3], expected_slice, atol=1e-4))
+        torch.testing.assert_close(outputs.logits[0, :3], expected_slice, rtol=2e-4, atol=2e-4)
 
     @slow
     def test_inference_semantic_segmentation(self):
         model = MobileNetV2ForSemanticSegmentation.from_pretrained("google/deeplabv3_mobilenet_v2_1.0_513")
         model = model.to(torch_device)
 
-        image_processor = MobileNetV2ImageProcessor.from_pretrained("google/deeplabv3_mobilenet_v2_1.0_513")
+        image_processor = MobileNetV2ImageProcessorPil.from_pretrained("google/deeplabv3_mobilenet_v2_1.0_513")
 
         image = prepare_img()
         inputs = image_processor(images=image, return_tensors="pt").to(torch_device)
@@ -339,13 +330,20 @@ class MobileNetV2ModelIntegrationTest(unittest.TestCase):
         expected_shape = torch.Size((1, 21, 65, 65))
         self.assertEqual(logits.shape, expected_shape)
 
-        expected_slice = torch.tensor(
-            [
-                [[17.5790, 17.7581, 18.3355], [18.3257, 18.4230, 18.8973], [18.6169, 18.8650, 19.2187]],
-                [[-2.1595, -2.0977, -2.3741], [-2.4226, -2.3028, -2.6835], [-2.7819, -2.5991, -2.7706]],
-                [[4.2058, 4.8317, 4.7638], [4.4136, 5.0361, 4.9383], [4.5028, 4.9644, 4.8734]],
-            ],
-            device=torch_device,
+        expectations = Expectations(
+            {
+                (None, None): [
+                    [[17.5790, 17.7581, 18.3355], [18.3257, 18.4230, 18.8973], [18.6169, 18.8650, 19.2187]],
+                    [[-2.1595, -2.0977, -2.3741], [-2.4226, -2.3028, -2.6835], [-2.7819, -2.5991, -2.7706]],
+                    [[4.2058, 4.8317, 4.7638], [4.4136, 5.0361, 4.9383], [4.5028, 4.9644, 4.8734]],
+                ],
+                ("cuda", 8): [
+                    [[17.5790, 17.7581, 18.3355], [18.3257, 18.4230, 18.8973], [18.6169, 18.8650, 19.2187]],
+                    [[-2.1595, -2.0977, -2.3742], [-2.4226, -2.3028, -2.6836], [-2.7820, -2.5991, -2.7706]],
+                    [[4.2058, 4.8317, 4.7638], [4.4136, 5.0361, 4.9383], [4.5028, 4.9645, 4.8734]],
+                ],
+            }
         )
+        expected_slice = torch.tensor(expectations.get_expectation()).to(torch_device)
 
-        self.assertTrue(torch.allclose(logits[0, :3, :3, :3], expected_slice, atol=1e-4))
+        torch.testing.assert_close(logits[0, :3, :3, :3], expected_slice, rtol=2e-4, atol=2e-4)

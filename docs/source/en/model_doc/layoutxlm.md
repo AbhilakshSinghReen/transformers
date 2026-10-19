@@ -9,17 +9,18 @@ Unless required by applicable law or agreed to in writing, software distributed 
 an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 
-⚠️ Note that this file is in Markdown but contain specific syntax for our doc-builder (similar to MDX) that may not be
+⚠️ Note that this file is in Markdown but contains specific syntax for our doc-builder (similar to MDX) that may not be
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2021-04-18 and contributed to Hugging Face Transformers on 2021-11-03.*
 
 # LayoutXLM
 
 ## Overview
 
-LayoutXLM was proposed in [LayoutXLM: Multimodal Pre-training for Multilingual Visually-rich Document Understanding](https://arxiv.org/abs/2104.08836) by Yiheng Xu, Tengchao Lv, Lei Cui, Guoxin Wang, Yijuan Lu, Dinei Florencio, Cha
-Zhang, Furu Wei. It's a multilingual extension of the [LayoutLMv2 model](https://arxiv.org/abs/2012.14740) trained
+LayoutXLM was proposed in [LayoutXLM: Multimodal Pre-training for Multilingual Visually-rich Document Understanding](https://huggingface.co/papers/2104.08836) by Yiheng Xu, Tengchao Lv, Lei Cui, Guoxin Wang, Yijuan Lu, Dinei Florencio, Cha
+Zhang, Furu Wei. It's a multilingual extension of the [LayoutLMv2 model](https://huggingface.co/papers/2012.14740) trained
 on 53 languages.
 
 The abstract from the paper is the following:
@@ -33,12 +34,17 @@ introduce a multilingual form understanding benchmark dataset named XFUN, which 
 for each language. Experiment results show that the LayoutXLM model has significantly outperformed the existing SOTA
 cross-lingual pre-trained models on the XFUN dataset.*
 
+This model was contributed by [nielsr](https://huggingface.co/nielsr). The original code can be found [here](https://github.com/microsoft/unilm).
+
+## Usage tips and examples
+
 One can directly plug in the weights of LayoutXLM into a LayoutLMv2 model, like so:
 
 ```python
 from transformers import LayoutLMv2Model
 
-model = LayoutLMv2Model.from_pretrained("microsoft/layoutxlm-base")
+
+model = LayoutLMv2Model.from_pretrained("microsoft/layoutxlm-base", device_map="auto")
 ```
 
 Note that LayoutXLM has its own tokenizer, based on
@@ -48,6 +54,7 @@ follows:
 ```python
 from transformers import LayoutXLMTokenizer
 
+
 tokenizer = LayoutXLMTokenizer.from_pretrained("microsoft/layoutxlm-base")
 ```
 
@@ -56,10 +63,14 @@ Similar to LayoutLMv2, you can use [`LayoutXLMProcessor`] (which internally appl
 [`LayoutXLMTokenizer`]/[`LayoutXLMTokenizerFast`] in sequence) to prepare all
 data for the model.
 
+<Tip>
+
 As LayoutXLM's architecture is equivalent to that of LayoutLMv2, one can refer to [LayoutLMv2's documentation page](layoutlmv2) for all tips, code examples and notebooks.
+</Tip>
 
-This model was contributed by [nielsr](https://huggingface.co/nielsr). The original code can be found [here](https://github.com/microsoft/unilm).
+## LayoutXLMConfig
 
+[[autodoc]] LayoutXLMConfig
 
 ## LayoutXLMTokenizer
 
@@ -70,10 +81,6 @@ This model was contributed by [nielsr](https://huggingface.co/nielsr). The origi
     - create_token_type_ids_from_sequences
     - save_vocabulary
 
-## LayoutXLMTokenizerFast
-
-[[autodoc]] LayoutXLMTokenizerFast
-    - __call__
 
 ## LayoutXLMProcessor
 

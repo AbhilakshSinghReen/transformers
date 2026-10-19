@@ -13,12 +13,14 @@ specific language governing permissions and limitations under the License.
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2021-12-08 and contributed to Hugging Face Transformers on 2022-05-11.*
 
 # FLAVA
 
+
 ## Overview
 
-The FLAVA model was proposed in [FLAVA: A Foundational Language And Vision Alignment Model](https://arxiv.org/abs/2112.04482) by Amanpreet Singh, Ronghang Hu, Vedanuj Goswami, Guillaume Couairon, Wojciech Galuba, Marcus Rohrbach, and Douwe Kiela and is accepted at CVPR 2022.
+The FLAVA model was proposed in [FLAVA: A Foundational Language And Vision Alignment Model](https://huggingface.co/papers/2112.04482) by Amanpreet Singh, Ronghang Hu, Vedanuj Goswami, Guillaume Couairon, Wojciech Galuba, Marcus Rohrbach, and Douwe Kiela and is accepted at CVPR 2022.
 
 The paper aims at creating a single unified foundation model which can work across vision, language
 as well as vision-and-language multimodal tasks.
@@ -33,9 +35,7 @@ at once -- a true vision and language foundation model should be good at vision 
 cross- and multi-modal vision and language tasks. We introduce FLAVA as such a model and demonstrate
 impressive performance on a wide range of 35 tasks spanning these target modalities.*
 
-
 This model was contributed by [aps](https://huggingface.co/aps). The original code can be found [here](https://github.com/facebookresearch/multimodal/tree/main/examples/flava).
-
 
 ## FlavaConfig
 
@@ -60,14 +60,16 @@ This model was contributed by [aps](https://huggingface.co/aps). The original co
 ## FlavaProcessor
 
 [[autodoc]] FlavaProcessor
-
-## FlavaFeatureExtractor
-
-[[autodoc]] FlavaFeatureExtractor
+    - __call__
 
 ## FlavaImageProcessor
 
 [[autodoc]] FlavaImageProcessor
+    - preprocess
+
+## FlavaImageProcessorPil
+
+[[autodoc]] FlavaImageProcessorPil
     - preprocess
 
 ## FlavaForPreTraining

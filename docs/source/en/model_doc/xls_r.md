@@ -13,12 +13,14 @@ specific language governing permissions and limitations under the License.
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2021-11-17 and contributed to Hugging Face Transformers on 2023-06-20.*
 
 # XLS-R
 
+
 ## Overview
 
-The XLS-R model was proposed in [XLS-R: Self-supervised Cross-lingual Speech Representation Learning at Scale](https://arxiv.org/abs/2111.09296) by Arun Babu, Changhan Wang, Andros Tjandra, Kushal Lakhotia, Qiantong Xu, Naman
+The XLS-R model was proposed in [XLS-R: Self-supervised Cross-lingual Speech Representation Learning at Scale](https://huggingface.co/papers/2111.09296) by Arun Babu, Changhan Wang, Andros Tjandra, Kushal Lakhotia, Qiantong Xu, Naman
 Goyal, Kritika Singh, Patrick von Platen, Yatharth Saraf, Juan Pino, Alexei Baevski, Alexis Conneau, Michael Auli.
 
 The abstract from the paper is the following:
@@ -34,14 +36,18 @@ language identification. Moreover, we show that with sufficient model size, cros
 English-only pretraining when translating English speech into other languages, a setting which favors monolingual
 pretraining. We hope XLS-R can help to improve speech processing tasks for many more languages of the world.*
 
-Tips:
+Relevant checkpoints can be found under https://huggingface.co/models?other=xls_r.
+
+The original code can be found [here](https://github.com/pytorch/fairseq/tree/master/fairseq/models/wav2vec).
+
+## Usage tips
 
 - XLS-R is a speech model that accepts a float array corresponding to the raw waveform of the speech signal.
 - XLS-R model was trained using connectionist temporal classification (CTC) so the model output has to be decoded using
   [`Wav2Vec2CTCTokenizer`].
 
-Relevant checkpoints can be found under https://huggingface.co/models?other=xls_r.
+<Tip>
 
-XLS-R's architecture is based on the Wav2Vec2 model, so one can refer to [Wav2Vec2's documentation page](wav2vec2).
+XLS-R's architecture is based on the Wav2Vec2 model, refer to [Wav2Vec2's documentation page](wav2vec2) for API reference.
 
-The original code can be found [here](https://github.com/pytorch/fairseq/tree/master/fairseq/models/wav2vec).
+</Tip>

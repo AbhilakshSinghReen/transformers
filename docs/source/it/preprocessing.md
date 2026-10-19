@@ -45,7 +45,7 @@ Carica un tokenizer preaddestrato con [`AutoTokenizer.from_pretrained`]:
 ```py
 >>> from transformers import AutoTokenizer
 
->>> tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+>>> tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-base-cased")
 ```
 
 Poi inserisci le tue frasi nel tokenizer:
@@ -194,7 +194,7 @@ Gli input audio sono processati in modo differente rispetto al testo, ma l'obiet
 pip install datasets
 ```
 
-Carica il dataset [MInDS-14](https://huggingface.co/datasets/PolyAI/minds14) (vedi il 🤗 [Datasets tutorial](https://huggingface.co/docs/datasets/load_hub.html) per avere maggiori dettagli su come caricare un dataset):
+Carica il dataset [MInDS-14](https://huggingface.co/datasets/PolyAI/minds14) (vedi il 🤗 [Datasets tutorial](https://huggingface.co/docs/datasets/load_hub) per avere maggiori dettagli su come caricare un dataset):
 
 ```py
 >>> from datasets import load_dataset, Audio
@@ -233,7 +233,7 @@ Per esempio, il dataset [MInDS-14](https://huggingface.co/datasets/PolyAI/minds1
  'sampling_rate': 8000}
 ```
 
-1. Usa il metodo di 🤗 Datasets' [`cast_column`](https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasets.Dataset.cast_column) per alzare la frequenza di campionamento a 16kHz:
+1. Usa il metodo di 🤗 Datasets' [`cast_column`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.cast_column) per alzare la frequenza di campionamento a 16kHz:
 
 ```py
 >>> dataset = dataset.cast_column("audio", Audio(sampling_rate=16_000))
@@ -321,12 +321,12 @@ La lunghezza dei campioni adesso coincide con la massima lunghezza impostata nel
 
 Un estrattore di caratteristiche si può usare anche per processare immagini e per compiti di visione. Ancora una volta, l'obiettivo è convertire l'immagine grezza in un lotto di tensori come input.
 
-Carica il dataset [food101](https://huggingface.co/datasets/food101) per questa esercitazione. Usa il parametro `split` di 🤗 Datasets  per caricare solo un piccolo campione dal dataset di addestramento poichè il set di dati è molto grande:
+Carica il dataset [food101](https://huggingface.co/datasets/ethz/food101) per questa esercitazione. Usa il parametro `split` di 🤗 Datasets  per caricare solo un piccolo campione dal dataset di addestramento poichè il set di dati è molto grande:
 
 ```py
 >>> from datasets import load_dataset
 
->>> dataset = load_dataset("food101", split="train[:100]")
+>>> dataset = load_dataset("ethz/food101", split="train[:100]")
 ```
 
 Secondo passo, dai uno sguardo alle immagini usando la caratteristica [`Image`](https://huggingface.co/docs/datasets/package_reference/main_classes.html?highlight=image#datasets.Image) di 🤗 Datasets:
@@ -370,7 +370,7 @@ Per le attività di visione, è usuale aggiungere alcuni tipi di data augmentati
 ...     return examples
 ```
 
-3. Poi utilizza 🤗 Datasets [`set_transform`](https://huggingface.co/docs/datasets/process.html#format-transform)per applicare al volo la trasformazione:
+3. Poi utilizza 🤗 Datasets [`set_transform`](https://huggingface.co/docs/datasets/process#format-transform)per applicare al volo la trasformazione:
 
 ```py
 >>> dataset.set_transform(transforms)
@@ -461,7 +461,7 @@ Ricorda dalla sezione precedente sull'elaborazione dei dati audio, tu dovresti s
 
 ### Processor
 
-Un processor combina un estrattore di caratteristiche e un tokenizer. Carica un processor con [`AutoProcessor.from_pretrained]:
+Un processor combina un estrattore di caratteristiche e un tokenizer. Carica un processor con [`AutoProcessor.from_pretrained`]:
 
 ```py
 >>> from transformers import AutoProcessor

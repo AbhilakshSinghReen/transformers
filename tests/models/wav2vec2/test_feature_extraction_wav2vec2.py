@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2021 HuggingFace Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,35 +14,18 @@
 
 
 import itertools
-import random
 import unittest
 
 import numpy as np
 
-from transformers import WAV_2_VEC_2_PRETRAINED_MODEL_ARCHIVE_LIST, Wav2Vec2Config, Wav2Vec2FeatureExtractor
+from transformers import Wav2Vec2Config, Wav2Vec2FeatureExtractor
 from transformers.testing_utils import require_torch, slow
 
+from ...test_processing_common import floats_list
 from ...test_sequence_feature_extraction_common import SequenceFeatureExtractionTestMixin
 
 
-global_rng = random.Random()
-
-
-def floats_list(shape, scale=1.0, rng=None, name=None):
-    """Creates a random float32 tensor"""
-    if rng is None:
-        rng = global_rng
-
-    values = []
-    for batch_idx in range(shape[0]):
-        values.append([])
-        for _ in range(shape[1]):
-            values[-1].append(rng.random() * scale)
-
-    return values
-
-
-class Wav2Vec2FeatureExtractionTester(unittest.TestCase):
+class Wav2Vec2FeatureExtractionTester:
     def __init__(
         self,
         parent,
@@ -223,10 +205,10 @@ class Wav2Vec2FeatureExtractionTest(SequenceFeatureExtractionTestMixin, unittest
         # this test makes sure that models that are using
         # group norm don't have their feature extractor return the
         # attention_mask
-        for model_id in WAV_2_VEC_2_PRETRAINED_MODEL_ARCHIVE_LIST:
-            config = Wav2Vec2Config.from_pretrained(model_id)
-            feat_extract = Wav2Vec2FeatureExtractor.from_pretrained(model_id)
+        model_id = "facebook/wav2vec2-base-960h"
+        config = Wav2Vec2Config.from_pretrained(model_id)
+        feat_extract = Wav2Vec2FeatureExtractor.from_pretrained(model_id)
 
-            # only "layer" feature extraction norm should make use of
-            # attention_mask
-            self.assertEqual(feat_extract.return_attention_mask, config.feat_extract_norm == "layer")
+        # only "layer" feature extraction norm should make use of
+        # attention_mask
+        self.assertEqual(feat_extract.return_attention_mask, config.feat_extract_norm == "layer")

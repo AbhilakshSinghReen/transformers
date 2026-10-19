@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2023 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Convert MusicGen checkpoints from the original repository."""
+
 import argparse
+from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, OrderedDict, Tuple
 
 import torch
 from audiocraft.models import MusicGen
@@ -66,7 +66,7 @@ def rename_keys(name):
     return name
 
 
-def rename_state_dict(state_dict: OrderedDict, hidden_size: int) -> Tuple[Dict, Dict]:
+def rename_state_dict(state_dict: OrderedDict, hidden_size: int) -> tuple[dict, dict]:
     """Function that takes the fairseq Musicgen state dict and renames it according to the HF
     module names. It further partitions the state dict into the decoder (LM) state dict, and that for the
     encoder-decoder projection."""
@@ -88,26 +88,40 @@ def rename_state_dict(state_dict: OrderedDict, hidden_size: int) -> Tuple[Dict, 
 
 
 def decoder_config_from_checkpoint(checkpoint: str) -> MusicgenDecoderConfig:
-    if checkpoint == "small":
+    if checkpoint.endswith("small"):
         # default config values
         hidden_size = 1024
         num_hidden_layers = 24
         num_attention_heads = 16
-    elif checkpoint == "medium":
+    elif checkpoint.endswith("medium"):
         hidden_size = 1536
         num_hidden_layers = 48
         num_attention_heads = 24
-    elif checkpoint == "large":
+    elif checkpoint.endswith("large"):
         hidden_size = 2048
         num_hidden_layers = 48
         num_attention_heads = 32
     else:
-        raise ValueError(f"Checkpoint should be one of `['small', 'medium', 'large']`, got {checkpoint}.")
+        raise ValueError(
+            "Checkpoint should be one of `['small', 'medium', 'large']` for the mono checkpoints, "
+            "`['facebook/musicgen-stereo-small', 'facebook/musicgen-stereo-medium', 'facebook/musicgen-stereo-large']` "
+            f"for the stereo checkpoints, or a custom checkpoint with the checkpoint size as a suffix, got {checkpoint}."
+        )
+
+    if "stereo" in checkpoint:
+        audio_channels = 2
+        num_codebooks = 8
+    else:
+        audio_channels = 1
+        num_codebooks = 4
+
     config = MusicgenDecoderConfig(
         hidden_size=hidden_size,
         ffn_dim=hidden_size * 4,
         num_hidden_layers=num_hidden_layers,
         num_attention_heads=num_attention_heads,
+        num_codebooks=num_codebooks,
+        audio_channels=audio_channels,
     )
     return config
 
@@ -122,7 +136,7 @@ def convert_musicgen_checkpoint(checkpoint, pytorch_dump_folder=None, repo_id=No
         decoder_state_dict, hidden_size=decoder_config.hidden_size
     )
 
-    text_encoder = T5EncoderModel.from_pretrained("t5-base")
+    text_encoder = T5EncoderModel.from_pretrained("google-t5/t5-base")
     audio_encoder = EncodecModel.from_pretrained("facebook/encodec_32khz")
     decoder = MusicgenForCausalLM(decoder_config).eval()
 
@@ -146,18 +160,20 @@ def convert_musicgen_checkpoint(checkpoint, pytorch_dump_folder=None, repo_id=No
     model.enc_to_dec_proj.load_state_dict(enc_dec_proj_state_dict)
 
     # check we can do a forward pass
-    input_ids = torch.arange(0, 8, dtype=torch.long).reshape(2, -1)
-    decoder_input_ids = input_ids.reshape(2 * 4, -1)
+    input_ids = torch.arange(0, 2 * decoder_config.num_codebooks, dtype=torch.long).reshape(2, -1)
+    decoder_input_ids = input_ids.reshape(2 * decoder_config.num_codebooks, -1)
 
     with torch.no_grad():
         logits = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids).logits
 
-    if logits.shape != (8, 1, 2048):
+    if logits.shape != (2 * decoder_config.num_codebooks, 1, 2048):
         raise ValueError("Incorrect shape for logits")
 
     # now construct the processor
-    tokenizer = AutoTokenizer.from_pretrained("t5-base")
-    feature_extractor = AutoFeatureExtractor.from_pretrained("facebook/encodec_32khz", padding_side="left")
+    tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-base")
+    feature_extractor = AutoFeatureExtractor.from_pretrained(
+        "facebook/encodec_32khz", padding_side="left", feature_size=decoder_config.audio_channels
+    )
 
     processor = MusicgenProcessor(feature_extractor=feature_extractor, tokenizer=tokenizer)
 
@@ -189,7 +205,10 @@ if __name__ == "__main__":
         "--checkpoint",
         default="small",
         type=str,
-        help="Checkpoint size of the MusicGen model you'd like to convert. Can be one of: `['small', 'medium', 'large']`.",
+        help="Checkpoint size of the MusicGen model you'd like to convert. Can be one of: "
+        "`['small', 'medium', 'large']` for the mono checkpoints, "
+        "`['facebook/musicgen-stereo-small', 'facebook/musicgen-stereo-medium', 'facebook/musicgen-stereo-large']` "
+        "for the stereo checkpoints, or a custom checkpoint with the checkpoint size as a suffix.",
     )
     parser.add_argument(
         "--pytorch_dump_folder",
@@ -199,7 +218,7 @@ if __name__ == "__main__":
         help="Path to the output PyTorch model directory.",
     )
     parser.add_argument(
-        "--push_to_hub", default=None, type=str, help="Where to upload the converted model on the 🤗 hub."
+        "--push_to_hub", default=None, type=str, help="Where to upload the converted model on the Hugging Face hub."
     )
     parser.add_argument(
         "--device", default="cpu", type=str, help="Torch device to run the conversion, either cpu or cuda."

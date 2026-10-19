@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2020 Huggingface
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,11 +28,6 @@ if is_torch_available():
     import torch
 
     from transformers import DPRContextEncoder, DPRQuestionEncoder, DPRReader, DPRReaderTokenizer
-    from transformers.models.dpr.modeling_dpr import (
-        DPR_CONTEXT_ENCODER_PRETRAINED_MODEL_ARCHIVE_LIST,
-        DPR_QUESTION_ENCODER_PRETRAINED_MODEL_ARCHIVE_LIST,
-        DPR_READER_PRETRAINED_MODEL_ARCHIVE_LIST,
-    )
 
 
 class DPRModelTester:
@@ -193,15 +187,19 @@ class DPRModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestCase):
 
     test_resize_embeddings = False
     test_missing_keys = False  # why?
-    test_pruning = False
-    test_head_masking = False
 
     def setUp(self):
         self.model_tester = DPRModelTester(self)
-        self.config_tester = ConfigTester(self, config_class=DPRConfig, hidden_size=37)
+        self.config_tester = ConfigTester(self, config_class=DPRConfig, hidden_size=32)
 
     def test_config(self):
         self.config_tester.run_common_tests()
+
+    def test_inputs_embeds_matches_input_ids(self):
+        position_ids = torch.arange(self.model_tester.seq_length, device=torch_device)
+        position_ids = position_ids[None, :].repeat(self.model_tester.batch_size, 1)
+        mask = torch.ones(self.model_tester.batch_size, self.model_tester.seq_length, device=torch_device)
+        return super().test_inputs_embeds_matches_input_ids(position_ids=position_ids, attention_mask=mask)
 
     def test_context_encoder_model(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
@@ -230,21 +228,21 @@ class DPRModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestCase):
 
     @slow
     def test_model_from_pretrained(self):
-        for model_name in DPR_CONTEXT_ENCODER_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
-            model = DPRContextEncoder.from_pretrained(model_name)
-            self.assertIsNotNone(model)
+        model_name = "facebook/dpr-ctx_encoder-single-nq-base"
+        model = DPRContextEncoder.from_pretrained(model_name)
+        self.assertIsNotNone(model)
 
-        for model_name in DPR_CONTEXT_ENCODER_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
-            model = DPRContextEncoder.from_pretrained(model_name)
-            self.assertIsNotNone(model)
+        model_name = "facebook/dpr-ctx_encoder-single-nq-base"
+        model = DPRContextEncoder.from_pretrained(model_name)
+        self.assertIsNotNone(model)
 
-        for model_name in DPR_QUESTION_ENCODER_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
-            model = DPRQuestionEncoder.from_pretrained(model_name)
-            self.assertIsNotNone(model)
+        model_name = "facebook/dpr-ctx_encoder-single-nq-base"
+        model = DPRQuestionEncoder.from_pretrained(model_name)
+        self.assertIsNotNone(model)
 
-        for model_name in DPR_READER_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
-            model = DPRReader.from_pretrained(model_name)
-            self.assertIsNotNone(model)
+        model_name = "facebook/dpr-ctx_encoder-single-nq-base"
+        model = DPRReader.from_pretrained(model_name)
+        self.assertIsNotNone(model)
 
 
 @require_torch
@@ -277,7 +275,7 @@ class DPRModelIntegrationTest(unittest.TestCase):
             dtype=torch.float,
             device=torch_device,
         )
-        self.assertTrue(torch.allclose(output[:, :10], expected_slice, atol=1e-4))
+        torch.testing.assert_close(output[:, :10], expected_slice, rtol=1e-4, atol=1e-4)
 
     @slow
     def test_reader_inference(self):
@@ -308,5 +306,5 @@ class DPRModelIntegrationTest(unittest.TestCase):
             dtype=torch.float,
             device=torch_device,
         )
-        self.assertTrue(torch.allclose(outputs.start_logits[:, :10], expected_start_logits, atol=1e-4))
-        self.assertTrue(torch.allclose(outputs.end_logits[:, :10], expected_end_logits, atol=1e-4))
+        torch.testing.assert_close(outputs.start_logits[:, :10], expected_start_logits, rtol=1e-4, atol=1e-4)
+        torch.testing.assert_close(outputs.end_logits[:, :10], expected_end_logits, rtol=1e-4, atol=1e-4)

@@ -45,7 +45,7 @@ Carga un tokenizador pre-entrenado con [`AutoTokenizer.from_pretrained`]:
 ```py
 >>> from transformers import AutoTokenizer
 
->>> tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+>>> tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-base-cased")
 ```
 
 A continuación, pasa tu frase al tokenizador:
@@ -195,7 +195,7 @@ Las entradas de audio se preprocesan de forma diferente a las entradas textuales
 pip install datasets
 ```
 
-Carga la tarea de detección de palabras clave del benchmark [SUPERB](https://huggingface.co/datasets/superb) (consulta el [tutorial 🤗 Dataset](https://huggingface.co/docs/datasets/load_hub.html) para que obtengas más detalles sobre cómo cargar un dataset):
+Carga la tarea de detección de palabras clave del benchmark [SUPERB](https://huggingface.co/datasets/superb) (consulta el [tutorial 🤗 Dataset](https://huggingface.co/docs/datasets/load_hub) para que obtengas más detalles sobre cómo cargar un dataset):
 
 ```py
 >>> from datasets import load_dataset, Audio
@@ -234,7 +234,7 @@ Por ejemplo, carga el dataset [LJ Speech](https://huggingface.co/datasets/lj_spe
  'sampling_rate': 22050}
 ```
 
-1. Usa el método 🤗 Datasets' [`cast_column`](https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasets.Dataset.cast_column) para reducir la tasa de muestreo a 16kHz:
+1. Usa el método 🤗 Datasets' [`cast_column`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.cast_column) para reducir la tasa de muestreo a 16kHz:
 
 ```py
 >>> lj_speech = lj_speech.cast_column("audio", Audio(sampling_rate=16_000))
@@ -321,15 +321,15 @@ Las longitudes de las dos primeras muestras coinciden ahora con la longitud máx
 
 También se utiliza un extractor de características para procesar imágenes para tareas de visión por computadora. Una vez más, el objetivo es convertir la imagen en bruto en un batch de tensores como entrada.
 
-Vamos a cargar el dataset [food101](https://huggingface.co/datasets/food101) para este tutorial. Usa el parámetro 🤗 Datasets `split` para cargar solo una pequeña muestra de la división de entrenamiento ya que el dataset es bastante grande:
+Vamos a cargar el dataset [food101](https://huggingface.co/datasets/ethz/food101) para este tutorial. Usa el parámetro 🤗 Datasets `split` para cargar solo una pequeña muestra de la división de entrenamiento ya que el dataset es bastante grande:
 
 ```py
 >>> from datasets import load_dataset
 
->>> dataset = load_dataset("food101", split="train[:100]")
+>>> dataset = load_dataset("ethz/food101", split="train[:100]")
 ```
 
-A continuación, observa la imagen con la función 🤗 Datasets [`Image`](https://huggingface.co/docs/datasets/package_reference/main_classes.html?highlight=image#datasets.Image):
+A continuación, observa la imagen con la función 🤗 Datasets [`Image`](https://huggingface.co/docs/datasets/package_reference/main_classes?highlight=image#datasets.Image):
 
 ```py
 >>> dataset[0]["image"]
@@ -370,7 +370,7 @@ Para las tareas de visión por computadora es común añadir algún tipo de aume
 ...     return examples
 ```
 
-3. A continuación, utiliza 🤗 Datasets [`set_transform`](https://huggingface.co/docs/datasets/process.html#format-transform) para aplicar las transformaciones sobre la marcha:
+3. A continuación, utiliza 🤗 Datasets [`set_transform`](https://huggingface.co/docs/datasets/process#format-transform) para aplicar las transformaciones sobre la marcha:
 
 ```py
 >>> dataset.set_transform(transforms)
@@ -461,7 +461,7 @@ Recuerda la sección anterior sobre el procesamiento de datos de audio, siempre 
 
 ### Processor
 
-Un processor combina un extractor de características y un tokenizador. Cargue un procesador con [`AutoProcessor.from_pretrained]:
+Un processor combina un extractor de características y un tokenizador. Cargue un procesador con [`AutoProcessor.from_pretrained`]:
 
 ```py
 >>> from transformers import AutoProcessor

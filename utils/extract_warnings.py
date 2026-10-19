@@ -44,7 +44,7 @@ def extract_warnings_from_single_artifact(artifact_path, targets):
                 # read the file
                 if filename != "warnings.txt":
                     continue
-                with open(file_path) as fp:
+                with open(file_path, encoding="utf-8") as fp:
                     parse_line(fp)
     else:
         try:
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     from_gh = args.from_gh
     if from_gh:
-        # The artifacts have to be downloaded using `actions/download-artifact@v3`
+        # The artifacts have to be downloaded using `actions/download-artifact@v4`
         pass
     else:
         os.makedirs(args.output_dir, exist_ok=True)

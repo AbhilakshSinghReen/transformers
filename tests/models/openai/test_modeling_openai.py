@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2020 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +28,6 @@ if is_torch_available():
     import torch
 
     from transformers import (
-        OPENAI_GPT_PRETRAINED_MODEL_ARCHIVE_LIST,
         OpenAIGPTConfig,
         OpenAIGPTDoubleHeadsModel,
         OpenAIGPTForSequenceClassification,
@@ -116,30 +114,27 @@ class OpenAIGPTModelTester:
             pad_token_id=self.pad_token_id,
         )
 
-        head_mask = ids_tensor([self.num_hidden_layers, self.num_attention_heads], 2)
-
         return (
             config,
             input_ids,
-            head_mask,
             token_type_ids,
             sequence_labels,
             token_labels,
             choice_labels,
         )
 
-    def create_and_check_openai_gpt_model(self, config, input_ids, head_mask, token_type_ids, *args):
+    def create_and_check_openai_gpt_model(self, config, input_ids, token_type_ids, *args):
         model = OpenAIGPTModel(config=config)
         model.to(torch_device)
         model.eval()
 
-        result = model(input_ids, token_type_ids=token_type_ids, head_mask=head_mask)
+        result = model(input_ids, token_type_ids=token_type_ids)
         result = model(input_ids, token_type_ids=token_type_ids)
         result = model(input_ids)
 
         self.parent.assertEqual(result.last_hidden_state.shape, (self.batch_size, self.seq_length, self.hidden_size))
 
-    def create_and_check_lm_head_model(self, config, input_ids, head_mask, token_type_ids, *args):
+    def create_and_check_lm_head_model(self, config, input_ids, token_type_ids, *args):
         model = OpenAIGPTLMHeadModel(config)
         model.to(torch_device)
         model.eval()
@@ -148,7 +143,7 @@ class OpenAIGPTModelTester:
         self.parent.assertEqual(result.loss.shape, ())
         self.parent.assertEqual(result.logits.shape, (self.batch_size, self.seq_length, self.vocab_size))
 
-    def create_and_check_double_lm_head_model(self, config, input_ids, head_mask, token_type_ids, *args):
+    def create_and_check_double_lm_head_model(self, config, input_ids, token_type_ids, *args):
         model = OpenAIGPTDoubleHeadsModel(config)
         model.to(torch_device)
         model.eval()
@@ -157,9 +152,7 @@ class OpenAIGPTModelTester:
         self.parent.assertEqual(result.loss.shape, ())
         self.parent.assertEqual(result.logits.shape, (self.batch_size, self.seq_length, self.vocab_size))
 
-    def create_and_check_openai_gpt_for_sequence_classification(
-        self, config, input_ids, head_mask, token_type_ids, *args
-    ):
+    def create_and_check_openai_gpt_for_sequence_classification(self, config, input_ids, token_type_ids, *args):
         config.num_labels = self.num_labels
         model = OpenAIGPTForSequenceClassification(config)
         model.to(torch_device)
@@ -174,7 +167,6 @@ class OpenAIGPTModelTester:
         (
             config,
             input_ids,
-            head_mask,
             token_type_ids,
             sequence_labels,
             token_labels,
@@ -183,7 +175,6 @@ class OpenAIGPTModelTester:
         inputs_dict = {
             "input_ids": input_ids,
             "token_type_ids": token_type_ids,
-            "head_mask": head_mask,
         }
 
         return config, inputs_dict
@@ -196,9 +187,6 @@ class OpenAIGPTModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTester
         if is_torch_available()
         else ()
     )
-    all_generative_model_classes = (
-        (OpenAIGPTLMHeadModel,) if is_torch_available() else ()
-    )  # TODO (PVP): Add Double HeadsModel when generate() function is changed accordingly
     pipeline_model_mapping = (
         {
             "feature-extraction": OpenAIGPTModel,
@@ -212,15 +200,38 @@ class OpenAIGPTModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTester
 
     # TODO: Fix the failed tests
     def is_pipeline_test_to_skip(
-        self, pipeline_test_casse_name, config_class, model_architecture, tokenizer_name, processor_name
+        self,
+        pipeline_test_case_name,
+        config_class,
+        model_architecture,
+        tokenizer_name,
+        image_processor_name,
+        feature_extractor_name,
+        processor_name,
     ):
-        if pipeline_test_casse_name == "ZeroShotClassificationPipelineTests":
+        if pipeline_test_case_name == "ZeroShotClassificationPipelineTests":
             # Get `tokenizer does not have a padding token` error for both fast/slow tokenizers.
             # `OpenAIGPTConfig` was never used in pipeline tests, either because of a missing checkpoint or because a
             # tiny config could not be created.
             return True
 
         return False
+
+    def _greedy_generate(self, *args, use_cache=False, **kwargs):
+        """Same as the general one, with `use_cache=False` explicitly as openai cannot use cache at all."""
+        return super()._greedy_generate(*args, use_cache=use_cache, **kwargs)
+
+    def _sample_generate(self, *args, use_cache=False, **kwargs):
+        """Same as the general one, with `use_cache=False` explicitly as openai cannot use cache at all."""
+        return super()._sample_generate(*args, use_cache=use_cache, **kwargs)
+
+    def _beam_search_generate(self, *args, use_cache=False, **kwargs):
+        """Same as the general one, with `use_cache=False` explicitly as openai cannot use cache at all."""
+        return super()._beam_search_generate(*args, use_cache=use_cache, **kwargs)
+
+    def _beam_sample_generate(self, *args, use_cache=False, **kwargs):
+        """Same as the general one, with `use_cache=False` explicitly as openai cannot use cache at all."""
+        return super()._beam_sample_generate(*args, use_cache=use_cache, **kwargs)
 
     # special case for DoubleHeads model
     def _prepare_for_class(self, inputs_dict, model_class, return_labels=False):
@@ -270,16 +281,24 @@ class OpenAIGPTModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTester
 
     @slow
     def test_model_from_pretrained(self):
-        for model_name in OPENAI_GPT_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
-            model = OpenAIGPTModel.from_pretrained(model_name)
-            self.assertIsNotNone(model)
+        model_name = "openai-community/openai-gpt"
+        model = OpenAIGPTModel.from_pretrained(model_name)
+        self.assertIsNotNone(model)
+
+    @unittest.skip("Openai cannot use a cache correctly and this test sets it to True explicitly")
+    def test_generate_methods_with_logits_to_keep(self):
+        pass
+
+    @unittest.skip("Openai cannot use a cache correctly and this test sets it to True explicitly")
+    def test_generate_with_and_without_position_ids(self):
+        pass
 
 
 @require_torch
 class OPENAIGPTModelLanguageGenerationTest(unittest.TestCase):
     @slow
     def test_lm_generate_openai_gpt(self):
-        model = OpenAIGPTLMHeadModel.from_pretrained("openai-gpt")
+        model = OpenAIGPTLMHeadModel.from_pretrained("openai-community/openai-gpt")
         model.to(torch_device)
         input_ids = torch.tensor([[481, 4735, 544]], dtype=torch.long, device=torch_device)  # the president is
         expected_output_ids = [
@@ -305,5 +324,5 @@ class OPENAIGPTModelLanguageGenerationTest(unittest.TestCase):
             481,
         ]  # the president is a very good man. " \n " i\'m sure he is, " said the
 
-        output_ids = model.generate(input_ids, do_sample=False)
+        output_ids = model.generate(input_ids, do_sample=False, max_length=20)
         self.assertListEqual(output_ids[0].tolist(), expected_output_ids)

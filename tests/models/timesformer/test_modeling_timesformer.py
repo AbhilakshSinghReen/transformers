@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2022 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Testing suite for the PyTorch TimeSformer model. """
-
+"""Testing suite for the PyTorch TimeSformer model."""
 
 import copy
-import inspect
 import unittest
+from functools import cached_property
 
 import numpy as np
 from huggingface_hub import hf_hub_download
 
 from transformers import TimesformerConfig
 from transformers.models.auto import get_values
-from transformers.testing_utils import require_torch, require_vision, slow, torch_device
-from transformers.utils import cached_property, is_torch_available, is_vision_available
+from transformers.testing_utils import Expectations, require_torch, require_vision, slow, torch_device
+from transformers.utils import is_torch_available, is_vision_available
 
 from ...test_configuration_common import ConfigTester
 from ...test_modeling_common import ModelTesterMixin, floats_tensor, ids_tensor
@@ -41,11 +39,10 @@ if is_torch_available():
         TimesformerForVideoClassification,
         TimesformerModel,
     )
-    from transformers.models.timesformer.modeling_timesformer import TIMESFORMER_PRETRAINED_MODEL_ARCHIVE_LIST
 
 
 if is_vision_available():
-    from transformers import VideoMAEImageProcessor
+    from transformers import VideoMAEImageProcessorPil
 
 
 class TimesformerModelTester:
@@ -166,15 +163,12 @@ class TimesformerModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
         else {}
     )
 
-    test_pruning = False
-    test_torchscript = False
     test_resize_embeddings = False
-    test_head_masking = False
 
     def setUp(self):
         self.model_tester = TimesformerModelTester(self)
         self.config_tester = ConfigTester(
-            self, config_class=TimesformerConfig, has_text_modality=False, hidden_size=37
+            self, config_class=TimesformerConfig, has_text_modality=False, hidden_size=32
         )
 
     def _prepare_for_class(self, inputs_dict, model_class, return_labels=False):
@@ -195,7 +189,7 @@ class TimesformerModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
     def test_inputs_embeds(self):
         pass
 
-    def test_model_common_attributes(self):
+    def test_model_get_set_embeddings(self):
         config, _ = self.model_tester.prepare_config_and_inputs_for_common()
 
         for model_class in self.all_model_classes:
@@ -203,18 +197,6 @@ class TimesformerModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
             self.assertIsInstance(model.get_input_embeddings(), (nn.Module))
             x = model.get_output_embeddings()
             self.assertTrue(x is None or isinstance(x, nn.Linear))
-
-    def test_forward_signature(self):
-        config, _ = self.model_tester.prepare_config_and_inputs_for_common()
-
-        for model_class in self.all_model_classes:
-            model = model_class(config)
-            signature = inspect.signature(model.forward)
-            # signature.parameters is an OrderedDict => so arg_names order is deterministic
-            arg_names = [*signature.parameters.keys()]
-
-            expected_arg_names = ["pixel_values"]
-            self.assertListEqual(arg_names[:1], expected_arg_names)
 
     def test_model(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
@@ -226,13 +208,13 @@ class TimesformerModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestC
 
     @slow
     def test_model_from_pretrained(self):
-        for model_name in TIMESFORMER_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
-            model = TimesformerModel.from_pretrained(model_name)
-            self.assertIsNotNone(model)
+        model_name = "facebook/timesformer-base-finetuned-k400"
+        model = TimesformerModel.from_pretrained(model_name)
+        self.assertIsNotNone(model)
 
     def test_attention_outputs(self):
         if not self.has_attentions:
-            pass
+            self.skipTest(reason="Model has no attentions")
 
         else:
             config, inputs_dict = self.model_tester.prepare_config_and_inputs_for_common()
@@ -342,7 +324,7 @@ class TimesformerModelIntegrationTest(unittest.TestCase):
     def default_image_processor(self):
         # logits were tested with a different mean and std, so we use the same here
         return (
-            VideoMAEImageProcessor(image_mean=[0.5, 0.5, 0.5], image_std=[0.5, 0.5, 0.5])
+            VideoMAEImageProcessorPil(image_mean=[0.5, 0.5, 0.5], image_std=[0.5, 0.5, 0.5])
             if is_vision_available()
             else None
         )
@@ -365,6 +347,11 @@ class TimesformerModelIntegrationTest(unittest.TestCase):
         expected_shape = torch.Size((1, 400))
         self.assertEqual(outputs.logits.shape, expected_shape)
 
-        expected_slice = torch.tensor([-0.3016, -0.7713, -0.4205]).to(torch_device)
-
-        self.assertTrue(torch.allclose(outputs.logits[0, :3], expected_slice, atol=1e-4))
+        expectations = Expectations(
+            {
+                (None, None): [-0.3016, -0.7713, -0.4205],
+                ("cuda", 8): [-0.3016, -0.7713, -0.4205],
+            }
+        )
+        expected_slice = torch.tensor(expectations.get_expectation()).to(torch_device)
+        torch.testing.assert_close(outputs.logits[0, :3], expected_slice, rtol=2e-4, atol=2e-4)

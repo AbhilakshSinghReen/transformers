@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
-import pickle
 import shutil
 import tempfile
 from unittest import TestCase
@@ -25,13 +23,11 @@ from datasets import Dataset
 
 from transformers import is_faiss_available
 from transformers.models.bart.configuration_bart import BartConfig
-from transformers.models.bart.tokenization_bart import BartTokenizer
-from transformers.models.bert.tokenization_bert import VOCAB_FILES_NAMES as DPR_VOCAB_FILES_NAMES
 from transformers.models.dpr.configuration_dpr import DPRConfig
 from transformers.models.dpr.tokenization_dpr import DPRContextEncoderTokenizer, DPRQuestionEncoderTokenizer
 from transformers.models.rag.configuration_rag import RagConfig
 from transformers.models.rag.retrieval_rag import CustomHFIndex, RagRetriever
-from transformers.models.roberta.tokenization_roberta import VOCAB_FILES_NAMES as BART_VOCAB_FILES_NAMES
+from transformers.models.roberta.tokenization_roberta import RobertaTokenizer as BartTokenizer
 from transformers.testing_utils import require_faiss, require_sentencepiece, require_tokenizers, require_torch
 
 
@@ -45,8 +41,8 @@ class RagRetrieverTest(TestCase):
         self.tmpdirname = tempfile.mkdtemp()
         self.retrieval_vector_size = 8
 
-        # DPR tok
-        vocab_tokens = [
+        # DPR tokenizer vocab
+        self.dpr_vocab_tokens = [
             "[UNK]",
             "[CLS]",
             "[SEP]",
@@ -63,13 +59,9 @@ class RagRetrieverTest(TestCase):
             "low",
             "lowest",
         ]
-        dpr_tokenizer_path = os.path.join(self.tmpdirname, "dpr_tokenizer")
-        os.makedirs(dpr_tokenizer_path, exist_ok=True)
-        self.vocab_file = os.path.join(dpr_tokenizer_path, DPR_VOCAB_FILES_NAMES["vocab_file"])
-        with open(self.vocab_file, "w", encoding="utf-8") as vocab_writer:
-            vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
+        self.dpr_vocab = {token: i for i, token in enumerate(self.dpr_vocab_tokens)}
 
-        # BART tok
+        # BART tokenizer vocab and merges
         vocab = [
             "l",
             "o",
@@ -92,27 +84,22 @@ class RagRetrieverTest(TestCase):
             "\u0120wider",
             "<unk>",
         ]
-        vocab_tokens = dict(zip(vocab, range(len(vocab))))
-        merges = ["#version: 0.2", "\u0120 l", "\u0120l o", "\u0120lo w", "e r", ""]
-        self.special_tokens_map = {"unk_token": "<unk>"}
-
-        bart_tokenizer_path = os.path.join(self.tmpdirname, "bart_tokenizer")
-        os.makedirs(bart_tokenizer_path, exist_ok=True)
-        self.vocab_file = os.path.join(bart_tokenizer_path, BART_VOCAB_FILES_NAMES["vocab_file"])
-        self.merges_file = os.path.join(bart_tokenizer_path, BART_VOCAB_FILES_NAMES["merges_file"])
-        with open(self.vocab_file, "w", encoding="utf-8") as fp:
-            fp.write(json.dumps(vocab_tokens) + "\n")
-        with open(self.merges_file, "w", encoding="utf-8") as fp:
-            fp.write("\n".join(merges))
+        self.bart_vocab = dict(zip(vocab, range(len(vocab))))
+        merges_raw = ["#version: 0.2", "\u0120 l", "\u0120l o", "\u0120lo w", "e r", ""]
+        self.bart_merges = []
+        for line in merges_raw:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                self.bart_merges.append(tuple(line.split()))
 
     def get_dpr_tokenizer(self) -> DPRQuestionEncoderTokenizer:
-        return DPRQuestionEncoderTokenizer.from_pretrained(os.path.join(self.tmpdirname, "dpr_tokenizer"))
+        return DPRQuestionEncoderTokenizer(vocab=self.dpr_vocab)
 
     def get_dpr_ctx_encoder_tokenizer(self) -> DPRContextEncoderTokenizer:
-        return DPRContextEncoderTokenizer.from_pretrained(os.path.join(self.tmpdirname, "dpr_tokenizer"))
+        return DPRContextEncoderTokenizer(vocab=self.dpr_vocab)
 
     def get_bart_tokenizer(self) -> BartTokenizer:
-        return BartTokenizer.from_pretrained(os.path.join(self.tmpdirname, "bart_tokenizer"))
+        return BartTokenizer(vocab=self.bart_vocab, merges=self.bart_merges, unk_token="<unk>")
 
     def tearDown(self):
         shutil.rmtree(self.tmpdirname)
@@ -172,37 +159,6 @@ class RagRetrieverTest(TestCase):
                 generator_tokenizer=self.get_bart_tokenizer(),
                 index=CustomHFIndex(config.retrieval_vector_size, dataset),
             )
-        return retriever
-
-    def get_dummy_legacy_index_retriever(self):
-        dataset = Dataset.from_dict(
-            {
-                "id": ["0", "1"],
-                "text": ["foo", "bar"],
-                "title": ["Foo", "Bar"],
-                "embeddings": [np.ones(self.retrieval_vector_size + 1), 2 * np.ones(self.retrieval_vector_size + 1)],
-            }
-        )
-        dataset.add_faiss_index("embeddings", string_factory="Flat", metric_type=faiss.METRIC_INNER_PRODUCT)
-
-        index_file_name = os.path.join(self.tmpdirname, "hf_bert_base.hnswSQ8_correct_phi_128.c_index")
-        dataset.save_faiss_index("embeddings", index_file_name + ".index.dpr")
-        pickle.dump(dataset["id"], open(index_file_name + ".index_meta.dpr", "wb"))
-
-        passages_file_name = os.path.join(self.tmpdirname, "psgs_w100.tsv.pkl")
-        passages = {sample["id"]: [sample["text"], sample["title"]] for sample in dataset}
-        pickle.dump(passages, open(passages_file_name, "wb"))
-
-        config = RagConfig(
-            retrieval_vector_size=self.retrieval_vector_size,
-            question_encoder=DPRConfig().to_dict(),
-            generator=BartConfig().to_dict(),
-            index_name="legacy",
-            index_path=self.tmpdirname,
-        )
-        retriever = RagRetriever(
-            config, question_encoder_tokenizer=self.get_dpr_tokenizer(), generator_tokenizer=self.get_bart_tokenizer()
-        )
         return retriever
 
     def test_canonical_hf_index_retriever_retrieve(self):
@@ -288,33 +244,6 @@ class RagRetrieverTest(TestCase):
             out = retriever.retrieve(hidden_states, n_docs=1)
             self.assertTrue(out is not None)
 
-    def test_legacy_index_retriever_retrieve(self):
-        n_docs = 1
-        retriever = self.get_dummy_legacy_index_retriever()
-        hidden_states = np.array(
-            [np.ones(self.retrieval_vector_size), -np.ones(self.retrieval_vector_size)], dtype=np.float32
-        )
-        retrieved_doc_embeds, doc_ids, doc_dicts = retriever.retrieve(hidden_states, n_docs=n_docs)
-        self.assertEqual(retrieved_doc_embeds.shape, (2, n_docs, self.retrieval_vector_size))
-        self.assertEqual(len(doc_dicts), 2)
-        self.assertEqual(sorted(doc_dicts[0]), ["text", "title"])
-        self.assertEqual(len(doc_dicts[0]["text"]), n_docs)
-        self.assertEqual(doc_dicts[0]["text"][0], "bar")  # max inner product is reached with second doc
-        self.assertEqual(doc_dicts[1]["text"][0], "foo")  # max inner product is reached with first doc
-        self.assertListEqual(doc_ids.tolist(), [[1], [0]])
-
-    def test_legacy_hf_index_retriever_save_and_from_pretrained(self):
-        retriever = self.get_dummy_legacy_index_retriever()
-        with tempfile.TemporaryDirectory() as tmp_dirname:
-            retriever.save_pretrained(tmp_dirname)
-            retriever = RagRetriever.from_pretrained(tmp_dirname)
-            self.assertIsInstance(retriever, RagRetriever)
-            hidden_states = np.array(
-                [np.ones(self.retrieval_vector_size), -np.ones(self.retrieval_vector_size)], dtype=np.float32
-            )
-            out = retriever.retrieve(hidden_states, n_docs=1)
-            self.assertTrue(out is not None)
-
     @require_torch
     @require_tokenizers
     @require_sentencepiece
@@ -327,7 +256,7 @@ class RagRetrieverTest(TestCase):
         hidden_states = np.array(
             [np.ones(self.retrieval_vector_size), -np.ones(self.retrieval_vector_size)], dtype=np.float32
         )
-        out = retriever(question_input_ids, hidden_states, prefix=retriever.config.generator.prefix, n_docs=n_docs)
+        out = retriever(question_input_ids, hidden_states, prefix=None, n_docs=n_docs)
         context_input_ids, context_attention_mask, retrieved_doc_embeds = (
             out["context_input_ids"],
             out["context_attention_mask"],
@@ -341,7 +270,7 @@ class RagRetrieverTest(TestCase):
         out = retriever(
             question_input_ids,
             hidden_states,
-            prefix=retriever.config.generator.prefix,
+            prefix=None,
             n_docs=n_docs,
             return_tensors="pt",
         )
@@ -369,7 +298,7 @@ class RagRetrieverTest(TestCase):
         hidden_states = np.array(
             [np.ones(self.retrieval_vector_size), -np.ones(self.retrieval_vector_size)], dtype=np.float32
         )
-        out = retriever(question_input_ids, hidden_states, prefix=retriever.config.generator.prefix, n_docs=n_docs)
+        out = retriever(question_input_ids, hidden_states, prefix=None, n_docs=n_docs)
 
         self.assertEqual(
             len(out), 6

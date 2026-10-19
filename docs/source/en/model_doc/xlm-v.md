@@ -13,13 +13,15 @@ specific language governing permissions and limitations under the License.
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2023-01-25 and contributed to Hugging Face Transformers on 2023-06-20.*
 
 # XLM-V
+
 
 ## Overview
 
 XLM-V is multilingual language model with a one million token vocabulary trained on 2.5TB of data from Common Crawl (same as XLM-R).
-It was introduced in the [XLM-V: Overcoming the Vocabulary Bottleneck in Multilingual Masked Language Models](https://arxiv.org/abs/2301.10472)
+It was introduced in the [XLM-V: Overcoming the Vocabulary Bottleneck in Multilingual Masked Language Models](https://huggingface.co/papers/2301.10472)
 paper by Davis Liang, Hila Gonen, Yuning Mao, Rui Hou, Naman Goyal, Marjan Ghazvininejad, Luke Zettlemoyer and Madian Khabsa.
 
 From the abstract of the XLM-V paper:
@@ -35,7 +37,10 @@ a multilingual language model with a one million token vocabulary. XLM-V outperf
 tested on ranging from natural language inference (XNLI), question answering (MLQA, XQuAD, TyDiQA), and
 named entity recognition (WikiAnn) to low-resource tasks (Americas NLI, MasakhaNER).*
 
-Tips:
+This model was contributed by [stefan-it](https://huggingface.co/stefan-it), including detailed experiments with XLM-V on downstream tasks.
+The experiments repository can be found [here](https://github.com/stefan-it/xlm-v-experiments).
+
+## Usage tips
 
 - XLM-V is compatible with the XLM-RoBERTa model architecture, only model weights from [`fairseq`](https://github.com/facebookresearch/fairseq)
   library had to be converted.
@@ -43,5 +48,7 @@ Tips:
 
 A XLM-V (base size) model is available under the [`facebook/xlm-v-base`](https://huggingface.co/facebook/xlm-v-base) identifier.
 
-This model was contributed by [stefan-it](https://huggingface.co/stefan-it), including detailed experiments with XLM-V on downstream tasks.
-The experiments repository can be found [here](https://github.com/stefan-it/xlm-v-experiments).
+<Tip>
+
+XLM-V architecture is the same as XLM-RoBERTa, refer to [XLM-RoBERTa documentation](xlm-roberta) for API reference, and examples.
+</Tip>

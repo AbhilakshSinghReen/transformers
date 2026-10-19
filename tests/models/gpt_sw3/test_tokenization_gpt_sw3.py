@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2022 Hugging Face inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,18 +26,22 @@ SAMPLE_VOCAB = get_tests_dir("fixtures/test_sentencepiece_with_bytefallback.mode
 @require_sentencepiece
 @require_tokenizers
 class GPTSw3TokenizationTest(TokenizerTesterMixin, unittest.TestCase):
+    from_pretrained_id = "hf-internal-testing/gpt-sw3-126m-instruct"
     tokenizer_class = GPTSw3Tokenizer
     test_rust_tokenizer = False
     test_sentencepiece = True
     test_sentencepiece_ignore_case = False
 
-    def setUp(self):
-        super().setUp()
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
 
         # We have a SentencePiece fixture for testing
-        tokenizer = GPTSw3Tokenizer(SAMPLE_VOCAB, eos_token="<unk>", bos_token="<unk>", pad_token="<unk>")
+        tokenizer = GPTSw3Tokenizer(
+            SAMPLE_VOCAB, eos_token="<unk>", bos_token="<unk>", pad_token="<unk>", name_or_path="test"
+        )
 
-        tokenizer.save_pretrained(self.tmpdirname)
+        tokenizer.save_pretrained(cls.tmpdirname)
 
     def get_input_output_texts(self, tokenizer):
         input_text = "This is a test"
@@ -65,7 +68,7 @@ class GPTSw3TokenizationTest(TokenizerTesterMixin, unittest.TestCase):
         self.assertEqual(self.get_tokenizer().vocab_size, 2_000)
 
     def test_full_tokenizer(self):
-        tokenizer = GPTSw3Tokenizer(SAMPLE_VOCAB)
+        tokenizer = GPTSw3Tokenizer(SAMPLE_VOCAB, name_or_path="test")
 
         tokens = tokenizer.tokenize("This is a test")
         self.assertListEqual(tokens, ["▁This", "▁is", "▁a", "▁t", "est"])
@@ -94,8 +97,14 @@ class GPTSw3TokenizationTest(TokenizerTesterMixin, unittest.TestCase):
         )
         # fmt: on
 
+    def test_preprocess_text_normalizes_unicode_whitespace(self):
+        tokenizer = GPTSw3Tokenizer(SAMPLE_VOCAB, name_or_path="test")
+
+        for whitespace in ["\u2002", "\u2003", "\u2005", "\u2008", "\u2009", "\u200a", "\u202f", "\u3000"]:
+            self.assertEqual(tokenizer.preprocess_text(f"en{whitespace}text"), "en text")
+
     def test_fast_encode_decode(self):
-        tokenizer = GPTSw3Tokenizer(SAMPLE_VOCAB)
+        tokenizer = GPTSw3Tokenizer(SAMPLE_VOCAB, name_or_path="test")
         texts = ["This is a test", "I was born in 92000, and this is falsé."]
         expected_ids_list = [
             [465, 287, 265, 631, 842],
@@ -120,11 +129,9 @@ class GPTSw3TokenizationTest(TokenizerTesterMixin, unittest.TestCase):
             "Det är inget fel på Mr. Cool",
         ]
 
-        # fmt: off
-        expected_encoding = {"input_ids": [[63423, 5, 6811, 14954, 282, 816, 3821, 63466, 63425, 63462, 18, 63978, 678, 301, 1320, 63423, 63455, 63458, 18, 63982, 4246, 3940, 1901, 47789, 5547, 18994], [19630, 1100, 63446, 1342, 633, 544, 4488, 593, 5102, 2416, 63495, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1652, 428, 268, 1936, 515, 268, 58593, 22413, 9106, 546, 268, 33213, 63979, 698, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [55130, 63450, 924, 63449, 2249, 4062, 1558, 318, 63504, 21498, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [509, 377, 2827, 2559, 332, 6575, 63443, 26801, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "token_type_ids": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "attention_mask": [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]}
-        # fmt: on
+        expected_encoding = {"input_ids": [[63423, 5, 6811, 14954, 282, 816, 3821, 63466, 63425, 63462, 18, 63978, 678, 301, 1320, 63423, 63455, 63458, 18, 63982, 4246, 3940, 1901, 47789, 5547, 18994], [19630, 1100, 63446, 1342, 633, 544, 4488, 593, 5102, 2416, 63495, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1652, 428, 268, 1936, 515, 268, 58593, 22413, 9106, 546, 268, 33213, 63979, 698, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [55130, 63450, 924, 63449, 2249, 4062, 1558, 318, 63504, 21498, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [509, 377, 2827, 2559, 332, 6575, 63443, 26801, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "attention_mask": [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]}  # fmt: skip
         self.tokenizer_integration_test_util(
             expected_encoding=expected_encoding,
-            model_name="AI-Sweden/gpt-sw3-126m",
+            model_name="hf-internal-testing/gpt-sw3-126m-instruct",
             sequences=sequences,
         )

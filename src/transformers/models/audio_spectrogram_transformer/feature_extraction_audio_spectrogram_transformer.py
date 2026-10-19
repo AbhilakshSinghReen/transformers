@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2022 The HuggingFace Inc. team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,20 +15,26 @@
 Feature extractor class for Audio Spectrogram Transformer.
 """
 
-from typing import List, Optional, Union
-
 import numpy as np
-import torch
-import torchaudio.compliance.kaldi as ta_kaldi
 
+from ...audio_utils import mel_filter_bank, spectrogram, window_function
 from ...feature_extraction_sequence_utils import SequenceFeatureExtractor
 from ...feature_extraction_utils import BatchFeature
-from ...utils import TensorType, logging
+from ...utils import TensorType, is_speech_available, is_torch_available, logging
+from ...utils.import_utils import requires
+
+
+if is_speech_available():
+    import torchaudio.compliance.kaldi as ta_kaldi
+
+if is_torch_available():
+    import torch
 
 
 logger = logging.get_logger(__name__)
 
 
+@requires(backends=("torch",))
 class ASTFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Audio Spectrogram Transformer (AST) feature extractor.
@@ -37,8 +42,8 @@ class ASTFeatureExtractor(SequenceFeatureExtractor):
     This feature extractor inherits from [`~feature_extraction_sequence_utils.SequenceFeatureExtractor`] which contains
     most of the main methods. Users should refer to this superclass for more information regarding those methods.
 
-    This class extracts mel-filter bank features from raw speech using TorchAudio, pads/truncates them to a fixed
-    length and normalizes them using a mean and standard deviation.
+    This class extracts mel-filter bank features from raw speech using TorchAudio if installed or using numpy
+    otherwise, pads/truncates them to a fixed length and normalizes them using a mean and standard deviation.
 
     Args:
         feature_size (`int`, *optional*, defaults to 1):
@@ -83,6 +88,21 @@ class ASTFeatureExtractor(SequenceFeatureExtractor):
         self.std = std
         self.return_attention_mask = return_attention_mask
 
+        if not is_speech_available():
+            mel_filters = mel_filter_bank(
+                num_frequency_bins=257,
+                num_mel_filters=self.num_mel_bins,
+                min_frequency=20,
+                max_frequency=sampling_rate // 2,
+                sampling_rate=sampling_rate,
+                norm=None,
+                mel_scale="kaldi",
+                triangularize_in_mel_space=True,
+            )
+
+            self.mel_filters = mel_filters
+            self.window = window_function(400, "hann", periodic=False)
+
     def _extract_fbank_features(
         self,
         waveform: np.ndarray,
@@ -93,17 +113,32 @@ class ASTFeatureExtractor(SequenceFeatureExtractor):
         and hence the waveform should not be normalized before feature extraction.
         """
         # waveform = waveform * (2**15)  # Kaldi compliance: 16-bit signed integers
-        waveform = torch.from_numpy(waveform).unsqueeze(0)
-        fbank = ta_kaldi.fbank(
-            waveform,
-            htk_compat=True,
-            sample_frequency=self.sampling_rate,
-            use_energy=False,
-            window_type="hanning",
-            num_mel_bins=self.num_mel_bins,
-            dither=0.0,
-            frame_shift=10,
-        )
+        if is_speech_available():
+            waveform = torch.from_numpy(waveform).unsqueeze(0)
+            fbank = ta_kaldi.fbank(
+                waveform,
+                sample_frequency=self.sampling_rate,
+                window_type="hanning",
+                num_mel_bins=self.num_mel_bins,
+            )
+        else:
+            waveform = np.squeeze(waveform)
+            fbank = spectrogram(
+                waveform,
+                self.window,
+                frame_length=400,
+                hop_length=160,
+                fft_length=512,
+                power=2.0,
+                center=False,
+                preemphasis=0.97,
+                mel_filters=self.mel_filters,
+                log_mel="log",
+                mel_floor=1.192092955078125e-07,
+                remove_dc_offset=True,
+            ).T
+
+            fbank = torch.from_numpy(fbank)
 
         n_frames = fbank.shape[0]
         difference = max_length - n_frames
@@ -124,16 +159,16 @@ class ASTFeatureExtractor(SequenceFeatureExtractor):
 
     def __call__(
         self,
-        raw_speech: Union[np.ndarray, List[float], List[np.ndarray], List[List[float]]],
-        sampling_rate: Optional[int] = None,
-        return_tensors: Optional[Union[str, TensorType]] = None,
+        raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],
+        sampling_rate: int | None = None,
+        return_tensors: str | TensorType | None = None,
         **kwargs,
     ) -> BatchFeature:
         """
         Main method to featurize and prepare for the model one or several sequence(s).
 
         Args:
-            raw_speech (`np.ndarray`, `List[float]`, `List[np.ndarray]`, `List[List[float]]`):
+            raw_speech (`np.ndarray`, `list[float]`, `list[np.ndarray]`, `list[list[float]]`):
                 The sequence or batch of sequences to be padded. Each sequence can be a numpy array, a list of float
                 values, a list of numpy arrays or a list of list of float values. Must be mono channel audio, not
                 stereo, i.e. single float per timestep.
@@ -143,7 +178,6 @@ class ASTFeatureExtractor(SequenceFeatureExtractor):
             return_tensors (`str` or [`~utils.TensorType`], *optional*):
                 If set, will return tensors instead of list of python integers. Acceptable values are:
 
-                - `'tf'`: Return TensorFlow `tf.constant` objects.
                 - `'pt'`: Return PyTorch `torch.Tensor` objects.
                 - `'np'`: Return Numpy `np.ndarray` objects.
         """
@@ -157,7 +191,7 @@ class ASTFeatureExtractor(SequenceFeatureExtractor):
                 )
         else:
             logger.warning(
-                "It is strongly recommended to pass the `sampling_rate` argument to this function. "
+                f"It is strongly recommended to pass the `sampling_rate` argument to `{self.__class__.__name__}()`. "
                 "Failing to do so can result in silent errors that might be hard to debug."
             )
 
@@ -198,3 +232,6 @@ class ASTFeatureExtractor(SequenceFeatureExtractor):
             padded_inputs = padded_inputs.convert_to_tensors(return_tensors)
 
         return padded_inputs
+
+
+__all__ = ["ASTFeatureExtractor"]

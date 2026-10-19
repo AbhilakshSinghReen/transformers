@@ -9,21 +9,22 @@ Unless required by applicable law or agreed to in writing, software distributed 
 an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 
-⚠️ Note that this file is in Markdown but contain specific syntax for our doc-builder (similar to MDX) that may not be
+⚠️ Note that this file is in Markdown but contains specific syntax for our doc-builder (similar to MDX) that may not be
 rendered properly in your Markdown viewer.
 
 -->
+*This model was published in HF papers on 2021-12-15 and contributed to Hugging Face Transformers on 2022-06-13.*
 
 # LongT5
 
+
 ## Overview
 
-The LongT5 model was proposed in [LongT5: Efficient Text-To-Text Transformer for Long Sequences](https://arxiv.org/abs/2112.07916)
+The LongT5 model was proposed in [LongT5: Efficient Text-To-Text Transformer for Long Sequences](https://huggingface.co/papers/2112.07916)
 by Mandy Guo, Joshua Ainslie, David Uthus, Santiago Ontanon, Jianmo Ni, Yun-Hsuan Sung and Yinfei Yang. It's an
 encoder-decoder transformer pre-trained in a text-to-text denoising generative setting. LongT5 model is an extension of
 T5 model, and it enables using one of the two different efficient attention mechanisms - (1) Local attention, or (2)
 Transient-Global attention.
-
 
 The abstract from the paper is the following:
 
@@ -36,7 +37,10 @@ attention ideas from long-input transformers (ETC), and adopted pre-training str
 able to achieve state-of-the-art results on several summarization tasks and outperform the original T5 models on
 question answering tasks.*
 
-Tips:
+This model was contributed by [stancld](https://huggingface.co/stancld).
+The original code can be found [here](https://github.com/google-research/longt5).
+
+## Usage tips
 
 - [`LongT5ForConditionalGeneration`] is an extension of [`T5ForConditionalGeneration`] exchanging the traditional
 encoder *self-attention* layer with efficient either *local* attention or *transient-global* (*tglobal*) attention.
@@ -55,42 +59,40 @@ also every global token like in the case of standard global attention (*transien
 are constructed dynamically within each attention operation).  As a consequence, *TGlobal* attention introduces
 a few new parameters -- global relative position biases and a layer normalization for global token's embedding.
 The complexity of this mechanism is `O(l(r + l/k))`.
-- An example showing how to evaluate a fine-tuned LongT5 model on the [pubmed dataset](https://huggingface.co/datasets/scientific_papers) is below.
+- An example showing how to evaluate a fine-tuned LongT5 model on the [pubmed dataset](https://huggingface.co/datasets/ccdv/pubmed-summarization) is below.
 
 ```python
->>> import evaluate
->>> from datasets import load_dataset
->>> from transformers import AutoTokenizer, LongT5ForConditionalGeneration
+import evaluate
+from datasets import load_dataset
 
->>> dataset = load_dataset("scientific_papers", "pubmed", split="validation")
->>> model = (
-...     LongT5ForConditionalGeneration.from_pretrained("Stancld/longt5-tglobal-large-16384-pubmed-3k_steps")
-...     .to("cuda")
-...     .half()
-... )
->>> tokenizer = AutoTokenizer.from_pretrained("Stancld/longt5-tglobal-large-16384-pubmed-3k_steps")
+from transformers import AutoTokenizer, LongT5ForConditionalGeneration
 
 
->>> def generate_answers(batch):
-...     inputs_dict = tokenizer(
-...         batch["article"], max_length=16384, padding="max_length", truncation=True, return_tensors="pt"
-...     )
-...     input_ids = inputs_dict.input_ids.to("cuda")
-...     attention_mask = inputs_dict.attention_mask.to("cuda")
-...     output_ids = model.generate(input_ids, attention_mask=attention_mask, max_length=512, num_beams=2)
-...     batch["predicted_abstract"] = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
-...     return batch
+dataset = load_dataset("ccdv/pubmed-summarization", "document", split="validation")
+model = (
+    LongT5ForConditionalGeneration.from_pretrained("Stancld/longt5-tglobal-large-16384-pubmed-3k_steps", device_map="auto")
+    .half()
+)
+tokenizer = AutoTokenizer.from_pretrained("Stancld/longt5-tglobal-large-16384-pubmed-3k_steps")
 
 
->>> result = dataset.map(generate_answer, batched=True, batch_size=2)
->>> rouge = evaluate.load("rouge")
->>> rouge.compute(predictions=result["predicted_abstract"], references=result["abstract"])
+def generate_answers(batch):
+    inputs_dict = tokenizer(
+        batch["article"], max_length=16384, padding="max_length", truncation=True, return_tensors="pt"
+    )
+    input_ids = inputs_dict.input_ids.to(model.device)
+    attention_mask = inputs_dict.attention_mask.to(model.device)
+    output_ids = model.generate(input_ids, attention_mask=attention_mask, max_length=512, num_beams=2)
+    batch["predicted_abstract"] = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+    return batch
+
+
+result = dataset.map(generate_answers, batched=True, batch_size=2)
+rouge = evaluate.load("rouge")
+rouge.compute(predictions=result["predicted_abstract"], references=result["abstract"])
 ```
 
-This model was contributed by [stancld](https://huggingface.co/stancld).
-The original code can be found [here](https://github.com/google-research/longt5).
-
-## Documentation resources
+## Resources
 
 - [Translation task guide](../tasks/translation)
 - [Summarization task guide](../tasks/summarization)
@@ -113,17 +115,3 @@ The original code can be found [here](https://github.com/google-research/longt5)
 
 [[autodoc]] LongT5EncoderModel
     - forward
-
-## FlaxLongT5Model
-
-[[autodoc]] FlaxLongT5Model
-    - __call__
-    - encode
-    - decode
-
-## FlaxLongT5ForConditionalGeneration
-
-[[autodoc]] FlaxLongT5ForConditionalGeneration
-    - __call__
-    - encode
-    - decode
